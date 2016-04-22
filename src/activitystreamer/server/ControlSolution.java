@@ -2,14 +2,19 @@ package activitystreamer.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import activitystreamer.util.Settings;
 
 public class ControlSolution extends Control
 {
 	private static final Logger log = LogManager.getLogger();
-
+	private static String sec = null;
+	private static ArrayList<Connection> serverList;
+	private static ArrayList<Connection> clientList;
 	/*
 	 * additional variables as needed
 	 */
@@ -28,12 +33,26 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
+		
 		/*
 		 * Do some further initialization here if necessary
 		 */
 
-		// check if we should initiate a connection and do so if necessary
-		initiateConnection();
+		//This is the root server
+		if(Settings.getRemoteHostname()==null){
+			//generate secrete keys here
+			sec = Settings.nextSecret();
+			Settings.setSecret(sec);
+			log.info("The secret key for all server is:" + sec.toString());
+		}// else is not the root server;check if the secret is correct or the command is valid
+		else {
+			// check if we should initiate a connection and do so if necessary
+			
+			initiateConnection();
+
+			
+		
+		}
 		// start the server's activity loop
 		// it will call doActivity every few seconds
 		start();
@@ -46,9 +65,12 @@ public class ControlSolution extends Control
 	public Connection incomingConnection(Socket s) throws IOException
 	{
 		Connection con = super.incomingConnection(s);
+		
 		/*
 		 * do additional things here
 		 */
+		
+		
 
 		return con;
 	}
@@ -60,6 +82,7 @@ public class ControlSolution extends Control
 	public Connection outgoingConnection(Socket s) throws IOException
 	{
 		Connection con = super.outgoingConnection(s);
+		con.writeMsg("hi, this is a new server yelling at you!!!");
 		/*
 		 * do additional things here
 		 */
@@ -89,7 +112,7 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-
+		log.debug(msg);
 		return false;
 	}
 

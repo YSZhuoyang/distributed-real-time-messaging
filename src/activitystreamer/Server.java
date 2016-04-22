@@ -18,6 +18,12 @@ import activitystreamer.util.Settings;
 public class Server
 {
 	private static final Logger log = LogManager.getLogger();
+	
+	private static int id = 0;
+	private static String hostname = null;
+	private static int load = 0;
+	private static int port = 0;
+	
 
 	private static void help(Options options)
 	{
