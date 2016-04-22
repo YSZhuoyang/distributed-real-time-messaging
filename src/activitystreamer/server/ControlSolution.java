@@ -13,8 +13,9 @@ public class ControlSolution extends Control
 {
 	private static final Logger log = LogManager.getLogger();
 	private static String sec = null;
-	private static ArrayList<Connection> serverList;
-	private static ArrayList<Connection> clientList;
+	private static ArrayList<Connection> serverList = new ArrayList<Connection>();
+	private static ArrayList<Connection> clientList = new ArrayList<Connection>();
+	private static int counter=0;
 	/*
 	 * additional variables as needed
 	 */
@@ -66,6 +67,7 @@ public class ControlSolution extends Control
 	{
 		Connection con = super.incomingConnection(s);
 		
+		
 		/*
 		 * do additional things here
 		 */
@@ -83,6 +85,8 @@ public class ControlSolution extends Control
 	{
 		Connection con = super.outgoingConnection(s);
 		con.writeMsg("hi, this is a new server yelling at you!!!");
+		
+		
 		/*
 		 * do additional things here
 		 */
@@ -113,6 +117,9 @@ public class ControlSolution extends Control
 		 * do additional work here return true/false as appropriate
 		 */
 		log.debug(msg);
+		serverList.add(con);
+		if(serverList.size()>0)
+			log.debug("This is from the 1st server that you connect!!");
 		return false;
 	}
 
@@ -126,7 +133,9 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-
+		/*if(serverList.size()>0)
+			serverList.get(0).writeMsg("hi, this is the first msg root send to server 1.");
+*/
 		return false;
 	}
 
