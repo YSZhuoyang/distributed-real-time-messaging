@@ -9,7 +9,7 @@ public class JsonMessage
 		
 	}
 	
-	public void setCommand(String c)
+	protected void setCommand(String c)
 	{
 		command = c;
 	}
