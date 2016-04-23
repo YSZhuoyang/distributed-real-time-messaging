@@ -1,10 +1,6 @@
 package activitystreamer.client;
 
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -14,7 +10,6 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
-import Message.JsonMessage;
 import Message.LoginMsg;
 import activitystreamer.util.Settings;
 
