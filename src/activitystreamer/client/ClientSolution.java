@@ -1,6 +1,10 @@
 package activitystreamer.client;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
@@ -10,6 +14,7 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 
+import Message.JsonMessage;
 import Message.LoginMsg;
 import activitystreamer.util.Settings;
 
@@ -57,10 +62,10 @@ public class ClientSolution extends Thread
 				// Try to establish connection
 				Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
 
-				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-				//PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()), true);
+				//PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+				PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()));
 				writer.println(loginMessage);
-				//writer.flush();
+				writer.flush();
 
 				log.info("Message sent: " + loginMessage);
 			}
@@ -97,7 +102,22 @@ public class ClientSolution extends Thread
 	@Override
 	public void run()
 	{
-		
+		/*while (true)
+		{
+			Socket socket = new Socket();
+			
+			try
+			{
+				DataInputStream in = new DataInputStream(socket.getInputStream());
+				DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+				BufferedReader inreader = new BufferedReader(new InputStreamReader(in));
+				PrintWriter outwriter = new PrintWriter(out, true);
+			}
+			catch (IOException e)
+			{
+				
+			}
+		}*/
 	}
 
 	/*

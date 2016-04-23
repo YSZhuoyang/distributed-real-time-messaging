@@ -5,11 +5,16 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import activitystreamer.util.Settings;
@@ -125,11 +130,26 @@ public class ControlSolution extends Control
 		//log.debug(msg);
 		log.info("Receieved: " + msg);
 		
-		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
-		String msgType = receivedJsonObj.get("command").toString();
+		//Gson gson = new Gson();
+		//JsonObject receivedJsonObj = gson.fromJson(msg, JsonObject.class);
 		
+		//JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		JSONParser parser = new JSONParser();
+		
+		try
+		{
+			JSONObject obj = (JSONObject) parser.parse(msg);
+			System.out.println(obj.get("command"));
+			
+		}
+		catch (ParseException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		//String msgType = receivedJsonObj.get("command").toString();
 		// Client connect check load balance
-		if (msgType.equals("LOGIN"))
+		/*if (msgType.equals("LOGIN"))
 		{
 			// check load balance
 		}
@@ -147,7 +167,7 @@ public class ControlSolution extends Control
 			
 			return true;
 		}
-		
+		*/
 		serverList.add(con);
 		
 		//if(serverList.size() > 0)
