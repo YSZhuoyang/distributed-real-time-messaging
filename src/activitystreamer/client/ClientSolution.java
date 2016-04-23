@@ -1,5 +1,6 @@
 package activitystreamer.client;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -11,6 +12,7 @@ import org.json.simple.JSONObject;
 import com.google.gson.Gson;
 
 import Message.LoginMsg;
+import Message.RegisterMsg;
 import activitystreamer.util.Settings;
 
 public class ClientSolution extends Thread
@@ -46,23 +48,23 @@ public class ClientSolution extends Thread
 			try
 			{
 				Gson gson = new Gson();
-				LoginMsg loginJson = new LoginMsg();
+				
 				
 				// Set values
-				loginJson.setSecret(Settings.getSecret());
-				loginJson.setUsername(Settings.getUsername());
-				
-				String loginMessage = gson.toJson(loginJson);
-				
+				RegisterMsg m = new RegisterMsg();
+				m.setUsername(Settings.getUsername());
+				m.setSecret(Settings.getSecret());
+				String loginMessage = gson.toJson(m);
 				// Try to establish connection
 				Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
 
-				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-				//PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()), true);
+				
+				//PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+				PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()), true);
 				writer.println(loginMessage);
-				//writer.flush();
+				writer.flush();
 
-				log.info("Message sent: " + loginMessage);
+				
 			}
 			catch (IOException e)
 			{
