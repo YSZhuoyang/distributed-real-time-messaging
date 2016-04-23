@@ -1,12 +1,17 @@
 package activitystreamer.server;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 import activitystreamer.util.Settings;
 
 public class ControlSolution extends Control
@@ -40,20 +45,21 @@ public class ControlSolution extends Control
 		 */
 
 		//This is the root server
-		if(Settings.getRemoteHostname()==null){
+		if(Settings.getRemoteHostname() == null)
+		{
 			//generate secrete keys here
 			sec = Settings.nextSecret();
 			Settings.setSecret(sec);
-			log.info("The secret key for all server is:" + sec.toString());
-		}// else is not the root server;check if the secret is correct or the command is valid
-		else {
-			// check if we should initiate a connection and do so if necessary
 			
-			initiateConnection();
-
-			
-		
+			log.info("The secret key for this server is:" + sec.toString());
 		}
+		// else is not the root server;check if the secret is correct or the command is valid
+		else
+		{
+			// check if we should initiate a connection and do so if necessary
+			initiateConnection();
+		}
+		
 		// start the server's activity loop
 		// it will call doActivity every few seconds
 		start();
@@ -116,10 +122,37 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-		log.debug(msg);
+		//log.debug(msg);
+		log.info("Receieved: " + msg);
+		
+		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		String msgType = receivedJsonObj.get("command").toString();
+		
+		// Client connect check load balance
+		if (msgType.equals("LOGIN"))
+		{
+			// check load balance
+		}
+		else if (msgType.equals("REGISTER"))
+		{
+			// check load balance
+		}
+		else if (msgType.equals("AUTHENTICATE"))
+		{
+			// Connect with server
+		}
+		else if (msgType.equals("LOGOUT"))
+		{
+			// Remove client from the client list
+			
+			return true;
+		}
+		
 		serverList.add(con);
-		if(serverList.size()>0)
-			log.debug("This is from the 1st server that you connect!!");
+		
+		//if(serverList.size() > 0)
+		//	log.debug("This is from the 1st server that you connect!!");
+		
 		return false;
 	}
 
@@ -142,5 +175,24 @@ public class ControlSolution extends Control
 	/*
 	 * Other methods as needed
 	 */
+	public void run()
+	{
+		/*try
+		{
+			ServerSocket listenSocket = new ServerSocket(Settings.getLocalPort());
+			
+			while(true)
+			{
+				System.out.println("Server listening for a connection");
+				Socket clientSocket = listenSocket.accept();
 
+				System.out.println("Received connection ");
+				Connection c = new Connection(clientSocket);
+			}
+		}
+		catch(IOException e)
+		{
+			System.out.println("Listen socket:"+e.getMessage());
+		}*/
+	}
 }

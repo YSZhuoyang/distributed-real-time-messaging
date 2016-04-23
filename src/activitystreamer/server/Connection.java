@@ -73,6 +73,8 @@ public class Connection extends Thread
 		try
 		{
 			String data;
+			log.info("connection running");
+			
 			while (!term && (data = inreader.readLine()) != null)
 			{
 				//term = Control.getInstance().process(this, data);
