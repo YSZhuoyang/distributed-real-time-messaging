@@ -86,10 +86,13 @@ public class ClientSolution extends Thread
 	@Override
 	public void run()
 	{
-		/*while (true)
+		// Receive redirection / login succ / login fail message
+		
+		
+		/*Socket socket = new Socket();
+		
+		while (true)
 		{
-			Socket socket = new Socket();
-			
 			try
 			{
 				DataInputStream in = new DataInputStream(socket.getInputStream());
