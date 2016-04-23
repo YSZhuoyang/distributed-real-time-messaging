@@ -2,22 +2,15 @@ package Message;
 
 public class JsonMessage
 {
-	private String command = "LOGIN";
-	private String username = "";
-	private String secret = "";
+	protected String command = "";
 	
 	public JsonMessage()
 	{
 		
 	}
 	
-	public void setUsername(String n)
+	public void setCommand(String c)
 	{
-		username = n;
-	}
-	
-	public void setSecret(String s)
-	{
-		secret = s;
+		command = c;
 	}
 }

@@ -15,6 +15,7 @@ import org.json.simple.JSONObject;
 import com.google.gson.Gson;
 
 import Message.JsonMessage;
+import Message.LoginMsg;
 import activitystreamer.util.Settings;
 
 public class ClientSolution extends Thread
@@ -50,7 +51,7 @@ public class ClientSolution extends Thread
 			try
 			{
 				Gson gson = new Gson();
-				JsonMessage loginJson = new JsonMessage();
+				LoginMsg loginJson = new LoginMsg();
 				
 				// Set values
 				loginJson.setSecret(Settings.getSecret());
@@ -60,10 +61,11 @@ public class ClientSolution extends Thread
 				
 				// Try to establish connection
 				Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-				
-				PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()));
+
+				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+				//PrintWriter writer = new PrintWriter(new DataOutputStream(socket.getOutputStream()), true);
 				writer.println(loginMessage);
-				writer.flush();
+				//writer.flush();
 
 				log.info("Message sent: " + loginMessage);
 			}
@@ -71,24 +73,6 @@ public class ClientSolution extends Thread
 			{
 				e.printStackTrace();
 			}
-			
-			//PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-			
-			
-			
-			// Send a json obj including client info to a remote server
-			/*try
-			{
-				Gson gson = new Gson();
-			}
-			catch (IOException e)
-			{
-				log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
-						+ Settings.getRemotePort() + " :" + e);
-				System.exit(-1);
-			}*/
-			
-			//log.info("The secret key for this client is:" + sec.toString());
 		}
 		
 		// open the gui

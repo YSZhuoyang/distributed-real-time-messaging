@@ -90,7 +90,7 @@ public class ControlSolution extends Control
 	public Connection outgoingConnection(Socket s) throws IOException
 	{
 		Connection con = super.outgoingConnection(s);
-		con.writeMsg("hi, this is a new server yelling at you!!!");
+		//con.writeMsg("hi, this is a new server yelling at you!!!");
 		
 		
 		/*
