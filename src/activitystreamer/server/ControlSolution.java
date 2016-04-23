@@ -1,22 +1,16 @@
 package activitystreamer.server;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Map.Entry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import Message.*;
 import activitystreamer.util.Settings;
 
 public class ControlSolution extends Control
@@ -25,7 +19,8 @@ public class ControlSolution extends Control
 	private static String sec = null;
 	private static ArrayList<Connection> serverList = new ArrayList<Connection>();
 	private static ArrayList<Connection> clientList = new ArrayList<Connection>();
-	private static int counter=0;
+	private static ArrayList<String> passwordList = new ArrayList<String>();
+	private static int counter = 0;
 	/*
 	 * additional variables as needed
 	 */
@@ -44,27 +39,28 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
-		
+
 		/*
 		 * Do some further initialization here if necessary
 		 */
 
-		//This is the root server
-		if(Settings.getRemoteHostname() == null)
+		// This is the root server
+		if (Settings.getRemoteHostname() == null)
 		{
-			//generate secrete keys here
+			// generate secrete keys here
 			sec = Settings.nextSecret();
 			Settings.setSecret(sec);
-			
+
 			log.info("The secret key for this server is:" + sec.toString());
 		}
-		// else is not the root server;check if the secret is correct or the command is valid
+		// else is not the root server;check if the secret is correct or the
+		// command is valid
 		else
 		{
 			// check if we should initiate a connection and do so if necessary
 			initiateConnection();
 		}
-		
+
 		// start the server's activity loop
 		// it will call doActivity every few seconds
 		start();
@@ -77,13 +73,10 @@ public class ControlSolution extends Control
 	public Connection incomingConnection(Socket s) throws IOException
 	{
 		Connection con = super.incomingConnection(s);
-		
-		
+
 		/*
 		 * do additional things here
 		 */
-		
-		
 
 		return con;
 	}
@@ -95,13 +88,17 @@ public class ControlSolution extends Control
 	public Connection outgoingConnection(Socket s) throws IOException
 	{
 		Connection con = super.outgoingConnection(s);
-		//con.writeMsg("hi, this is a new server yelling at you!!!");
-		
-		
+		// con.writeMsg("hi, this is a new server yelling at you!!!");
+		Gson gson = new Gson();
+		AuthMsg AuthJson = new AuthMsg();
+		// Set values
+		AuthJson.setSecret(Settings.getSecret());
+		String m = gson.toJson(AuthJson);
+		con.writeMsg(m.toString());
+
 		/*
 		 * do additional things here
 		 */
-
 		return con;
 	}
 
@@ -127,52 +124,120 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-		//log.debug(msg);
-		log.info("Receieved: " + msg);
+		log.debug("Receieved: " + msg);
 		
-		//Gson gson = new Gson();
-		//JsonObject receivedJsonObj = gson.fromJson(msg, JsonObject.class);
+		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		String msgType = receivedJsonObj.get("command").getAsString();
 		
-		//JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
-		JSONParser parser = new JSONParser();
+		switch(msgType)
+		{
+			case "LOGIN":
+				// Client connect check load balance
+				String secret = receivedJsonObj.get("secret").getAsString();
+				
+				if (passwordList.contains(secret))
+				{
+					LoginSuccMsg m = new LoginSuccMsg();
+					m.setInfo("Login_Success");
+					clientList.add(con);
+					
+					// Send login successful message
+					
+					log.info("Login_Success");
+				}
+				else
+				{
+					LoginFailed m = new LoginFailed();
+					m.setInfo("Login_Failed");
+					
+					// Send faild info to client
+					
+				}
+
+				break;
+				
+				case "REGISTER":
+					// check load balance
+					// RedirectMsg m = new RedirectMsg();
+
+					// check lock
+					passwordList.add(receivedJsonObj.get("secret").getAsString());
+					RegistSuccMsg m = new RegistSuccMsg();
+					m.setInfo("Register_Succ");
+					log.info("Register_Succ");
+					
+					break;
+					
+				case "AUTHENTICATE":
+					// Connect with server
+					if (receivedJsonObj.get("secret").getAsString() != (Settings.getSecret()))
+					{
+						AuthFailMsg authJson = new AuthFailMsg();
+						authJson.setInfo("Authetication failed");
+						
+						String message = new Gson().toJson(authJson);
+						con.writeMsg(message);
+					}
+					
+					break;
+					
+				case "AUTHENTICATE_FAILED":
+					// print err msg
+					
+					break;
+					
+				case "LOGOUT":
+					// Remove client from the client list
+					
+					return true;
+					
+				case "INVALID_MESSAGE":
+					InvalidMsg invalidMsg = new InvalidMsg();
+					invalidMsg.setInfo("");
+					
+					String message = new Gson().toJson(invalidMsg);
+					con.writeMsg(message);
+					
+					break;
+				case "ACTIVITY_MESSAGE":
+					// send
+					
+					break;
+					
+				case "SERVER_ANNOUNCE":
+					// ...
+					
+					break;
+					
+				case "ACTIVITY_BROADCAST":
+					// broadcast
+					
+					break;
+					
+				case "LOCK_REQUEST":
+					// ...
+					
+					break;
+					
+				case "LOCK_DENIED":
+					// ...
+					
+					break;
+					
+				case "LOCK_ALLOWED":
+					// ...
+					
+					break;
+					
+				default:
+					break;
+		}
 		
-		try
-		{
-			JSONObject obj = (JSONObject) parser.parse(msg);
-			System.out.println(obj.get("command"));
-			
-		}
-		catch (ParseException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		//String msgType = receivedJsonObj.get("command").toString();
-		// Client connect check load balance
-		/*if (msgType.equals("LOGIN"))
-		{
-			// check load balance
-		}
-		else if (msgType.equals("REGISTER"))
-		{
-			// check load balance
-		}
-		else if (msgType.equals("AUTHENTICATE"))
-		{
-			// Connect with server
-		}
-		else if (msgType.equals("LOGOUT"))
-		{
-			// Remove client from the client list
-			
-			return true;
-		}
-		*/
 		serverList.add(con);
-		
-		//if(serverList.size() > 0)
-		//	log.debug("This is from the 1st server that you connect!!");
-		
+
+		// if(serverList.size() > 0)
+		// log.debug("This is from the 1st server that you connect!!");
+
 		return false;
 	}
 
@@ -186,9 +251,10 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-		/*if(serverList.size()>0)
-			serverList.get(0).writeMsg("hi, this is the first msg root send to server 1.");
-*/
+		/*
+		 * if(serverList.size()>0) serverList.get(0).writeMsg(
+		 * "hi, this is the first msg root send to server 1.");
+		 */
 		return false;
 	}
 
@@ -197,22 +263,16 @@ public class ControlSolution extends Control
 	 */
 	public void run()
 	{
-		/*try
-		{
-			ServerSocket listenSocket = new ServerSocket(Settings.getLocalPort());
-			
-			while(true)
-			{
-				System.out.println("Server listening for a connection");
-				Socket clientSocket = listenSocket.accept();
-
-				System.out.println("Received connection ");
-				Connection c = new Connection(clientSocket);
-			}
-		}
-		catch(IOException e)
-		{
-			System.out.println("Listen socket:"+e.getMessage());
-		}*/
+		/*
+		 * try { ServerSocket listenSocket = new
+		 * ServerSocket(Settings.getLocalPort());
+		 * 
+		 * while(true) { System.out.println("Server listening for a connection"
+		 * ); Socket clientSocket = listenSocket.accept();
+		 * 
+		 * System.out.println("Received connection "); Connection c = new
+		 * Connection(clientSocket); } } catch(IOException e) {
+		 * System.out.println("Listen socket:"+e.getMessage()); }
+		 */
 	}
 }

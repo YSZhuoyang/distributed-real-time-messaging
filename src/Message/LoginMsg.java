@@ -7,7 +7,6 @@ public class LoginMsg extends JsonMessage
 
 	public LoginMsg()
 	{
-		super();
 		setCommand("LOGIN");
 	}
 
