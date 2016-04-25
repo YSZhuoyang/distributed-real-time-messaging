@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import Message.*;
+import activitystreamer.Server;
 import activitystreamer.util.Settings;
 
 public class ControlSolution extends Control
@@ -19,6 +20,7 @@ public class ControlSolution extends Control
 	private static String sec = null;
 	private static ArrayList<Connection> serverList = new ArrayList<Connection>();
 	private static ArrayList<Connection> clientList = new ArrayList<Connection>();
+	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<ServerInfo>();
 	private static ArrayList<String> passwordList = new ArrayList<String>();
 	private static int counter = 0;
 	/*
@@ -124,128 +126,161 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
+		
 		log.debug("Receieved: " + msg);
 		
 		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
-		String msgType = receivedJsonObj.get("command").getAsString();
-		
-		switch(msgType)
-		{
-			case "LOGIN":
-				// Client connect check load balance
-				String secret = receivedJsonObj.get("secret").getAsString();
-				
-				if (passwordList.contains(secret))
-				{
-					LoginSuccMsg m = new LoginSuccMsg();
-					m.setInfo("Login_Success");
-					clientList.add(con);
+		String msgType = null;
+		if(receivedJsonObj.has("command"));
+		else{
+			msgType = receivedJsonObj.get("command").getAsString();
+			
+			switch(msgType)
+			{
+				case "LOGIN":
+					Server.setLoad(1);
+					// Client connect check load balance
+					String secret = receivedJsonObj.get("secret").getAsString();
 					
-					// Send login successful message
-					
-					log.info("Login_Success");
-				}
-				else
-				{
-					LoginFailed m = new LoginFailed();
-					m.setInfo("Login_Failed");
-					
-					// Send faild info to client
-					
-				}
-
-				break;
-				
-				case "REGISTER":
-					// check load balance
-					// RedirectMsg m = new RedirectMsg();
-
-					// check lock
-					passwordList.add(receivedJsonObj.get("secret").getAsString());
-					RegistSuccMsg m = new RegistSuccMsg();
-					m.setInfo("Register_Succ");
-					log.info("Register_Succ");
-					
-					break;
-					
-				case "AUTHENTICATE":
-					// Connect with server
-					if (receivedJsonObj.get("secret").getAsString() != (Settings.getSecret()))
+					if (passwordList.contains(secret))
 					{
-						AuthFailMsg authJson = new AuthFailMsg();
-						authJson.setInfo("Authetication failed");
+						LoginSuccMsg m = new LoginSuccMsg();
+						m.setInfo("Login_Success");
+						clientList.add(con);
 						
-						String message = new Gson().toJson(authJson);
-						con.writeMsg(message);
+						// Send login successful message
+						String loginMessage = new Gson().toJson(m);
+						con.writeMsg(loginMessage);
 					}
-					
+					else
+					{
+						LoginFailed m = new LoginFailed();
+						m.setInfo("Login_Failed");
+						
+						// Send faild info to client
+						String loginMessage = new Gson().toJson(m);
+						con.writeMsg(loginMessage);
+					}
+	
 					break;
 					
-				case "AUTHENTICATE_FAILED":
-					// print err msg
-					
-					break;
-					
-				case "LOGOUT":
-					// Remove client from the client list
-					
-					return true;
-					
-				case "INVALID_MESSAGE":
-					InvalidMsg invalidMsg = new InvalidMsg();
-					invalidMsg.setInfo("");
-					
-					String message = new Gson().toJson(invalidMsg);
-					con.writeMsg(message);
-					
-					break;
-				case "ACTIVITY_MESSAGE":
-					// send
-					
-					break;
-					
-				case "SERVER_ANNOUNCE":
-					// ...
-					
-					break;
-					
-				case "ACTIVITY_BROADCAST":
-					// broadcast
-					
-					break;
-					
-				case "LOCK_REQUEST":
-					// ...
-					
-					break;
-					
-				case "LOCK_DENIED":
-					// ...
-					
-					break;
-					
-				case "LOCK_ALLOWED":
-					// ...
-					
-					break;
-					
-				default:
-					break;
+					case "REGISTER":
+						Server.setLoad(1);
+						// check load balance
+						// RedirectMsg m = new RedirectMsg();
+	
+						// check lock
+						passwordList.add(receivedJsonObj.get("secret").getAsString());
+						RegistSuccMsg m = new RegistSuccMsg();
+						m.setInfo("Register_Succ");
+						//log.info("Register_Succ");
+						String registerMessage = new Gson().toJson(m);
+						con.writeMsg(registerMessage);
+						break;
+						
+					case "AUTHENTICATE":
+						// Connect with server
+						if (!receivedJsonObj.get("secret").getAsString().equals(Settings.getSecret()))
+						{
+							AuthFailMsg authJson = new AuthFailMsg();
+							authJson.setInfo("Authetication failed");
+							String authMessage = new Gson().toJson(authJson);
+							con.writeMsg(authMessage);
+						}
+						else{
+							serverList.add(con);
+							//log.debug("success");
+						}
+						
+						break;
+						
+					case "AUTHENTICATE_FAILED":
+						// print err msg
+						LoginFailed serverAuthJson = new LoginFailed();
+						serverAuthJson.setInfo("Login failed");
+						String serverAuthMessage = new Gson().toJson(serverAuthJson);
+						con.writeMsg(serverAuthMessage);
+						break;
+						
+					case "LOGOUT":
+						// Remove client from the client list
+						clientList.remove(con);
+						log.info("user logout");
+						return true;
+						
+					case "INVALID_MESSAGE":
+						if (receivedJsonObj.get("command").getAsString()=="invalid_message");
+						InvalidMsg invalidMsg = new InvalidMsg();
+						invalidMsg.setInfo("Invalid_Message");
+						String invalidMessage = new Gson().toJson(invalidMsg);
+						con.writeMsg(invalidMessage);
+						
+						break;
+					case "ACTIVITY_MESSAGE":
+						// send
+						
+						break;
+						
+					case "SERVER_ANNOUNCE":
+						// ...
+						int index =lookup(receivedJsonObj.get("id").getAsString());
+						if(index!=-1){
+							serverInfoList.get(index).setServerLoad(receivedJsonObj.get("load").getAsInt());
+						}
+						else{
+							ServerInfo s = new ServerInfo();
+							s.setServerLoad(receivedJsonObj.get("load").getAsInt());
+							s.setId(receivedJsonObj.get("id").getAsString());
+							s.setRemoteHostname(receivedJsonObj.get("remoteHostname").getAsString());
+							s.setRemotePort(receivedJsonObj.get("remotePort").getAsInt());
+							serverInfoList.add(s);
+						}
+						break;
+						
+					case "ACTIVITY_BROADCAST":
+						// broadcast
+						
+						break;
+						
+					case "LOCK_REQUEST":
+						// ...
+						
+						break;
+						
+					case "LOCK_DENIED":
+						// ...
+						
+						break;
+						
+					case "LOCK_ALLOWED":
+						// ...
+						
+						break;
+						
+					default:
+						break;
+			}
+			// if(serverList.size() > 0)
+			// log.debug("This is from the 1st server that you connect!!");
+		}
+		return false;
+		
+	}
+	public static int lookup(String id){
+		int index = -1;
+		for(int i=0; i<serverInfoList.size();i++){
+			if(serverInfoList.get(i).getId().equals(id))
+				index = i;
 		}
 		
-		serverList.add(con);
-
-		// if(serverList.size() > 0)
-		// log.debug("This is from the 1st server that you connect!!");
-
-		return false;
+		return index;
 	}
-
 	/*
 	 * Called once every few seconds Return true if server should shut down,
 	 * false otherwise
 	 */
 	@Override
+	
 	public boolean doActivity()
 	{
 		/*
@@ -263,6 +298,7 @@ public class ControlSolution extends Control
 	 */
 	public void run()
 	{
+		//authentication check
 		/*
 		 * try { ServerSocket listenSocket = new
 		 * ServerSocket(Settings.getLocalPort());
