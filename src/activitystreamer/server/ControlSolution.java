@@ -1,6 +1,7 @@
 package activitystreamer.server;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -22,7 +23,9 @@ public class ControlSolution extends Control
 	private static ArrayList<Connection> clientList = new ArrayList<Connection>();
 	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<ServerInfo>();
 	private static ArrayList<String> passwordList = new ArrayList<String>();
-	private static int counter = 0;
+	
+	private String id = "";
+	private int load = 0;
 	/*
 	 * additional variables as needed
 	 */
@@ -41,6 +44,7 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
+		id = Settings.nextSecret();
 
 		/*
 		 * Do some further initialization here if necessary
@@ -138,7 +142,7 @@ public class ControlSolution extends Control
 			switch(msgType)
 			{
 				case "LOGIN":
-					Server.setLoad(1);
+					setLoad(1);
 					// Client connect check load balance
 					String secret = receivedJsonObj.get("secret").getAsString();
 					
@@ -165,7 +169,7 @@ public class ControlSolution extends Control
 					break;
 					
 					case "REGISTER":
-						Server.setLoad(1);
+						setLoad(1);
 						// check load balance
 						// RedirectMsg m = new RedirectMsg();
 	
@@ -256,7 +260,7 @@ public class ControlSolution extends Control
 						// ...
 						
 						break;
-						
+					case "":
 					default:
 						break;
 			}
@@ -274,6 +278,14 @@ public class ControlSolution extends Control
 		}
 		
 		return index;
+	}
+	public static void generateMsg(String hostname, String port){
+		RedirectMsg m = new RedirectMsg();
+		m.setHost(hostname);
+		m.setPort(port);
+	}
+	public void setLoad(int number){
+		load =+ number;
 	}
 	/*
 	 * Called once every few seconds Return true if server should shut down,
@@ -299,16 +311,20 @@ public class ControlSolution extends Control
 	public void run()
 	{
 		//authentication check
-		/*
-		 * try { ServerSocket listenSocket = new
-		 * ServerSocket(Settings.getLocalPort());
-		 * 
-		 * while(true) { System.out.println("Server listening for a connection"
-		 * ); Socket clientSocket = listenSocket.accept();
-		 * 
-		 * System.out.println("Received connection "); Connection c = new
-		 * Connection(clientSocket); } } catch(IOException e) {
-		 * System.out.println("Listen socket:"+e.getMessage()); }
-		 */
+		
+//		 try { 
+//			  Listener listenSocket = new ServerSocket(Settings.getLocalPort());
+//			 while(true) {
+//				System.out.println("Server listening for a connection");
+//			  	Socket clientSocket = listenSocket.accept();
+//			  	
+//			  	System.out.println("Received connection "); 
+//			  	Connection c = new Connection(clientSocket); } } 
+//			  catch(IOException e) {
+//			  	System.out.println("Listen socket:"+e.getMessage()); 
+//			  }
+//		 
+	 	ActBroadMsg m = new ActBroadMsg();
+	 	
 	}
 }

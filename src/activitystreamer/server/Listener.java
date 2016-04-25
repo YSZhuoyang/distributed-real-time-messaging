@@ -38,7 +38,13 @@ public class Listener extends Thread{
 
 	public void setTerm(boolean term) {
 		this.term = term;
-		if(term) interrupt();
+		if(term){
+			try{
+				serverSocket.close();
+			}catch (IOException io){
+				log.error("Server socket closed error");
+			}
+		}
 	}
 	
 	
