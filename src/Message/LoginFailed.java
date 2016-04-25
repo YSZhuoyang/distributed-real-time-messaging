@@ -6,7 +6,7 @@ public class LoginFailed extends JsonMessage
 
 	public LoginFailed()
 	{
-		setCommand("LOGIN_FAILED");
+		setCommand(JsonMessage.LOGIN_FAILED);
 	}
 
 	public void setInfo(String info)

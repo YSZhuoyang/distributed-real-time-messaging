@@ -7,7 +7,7 @@ public class RegisterMsg extends JsonMessage
 
 	public RegisterMsg()
 	{
-		command = "REGISTER";
+		setCommand(JsonMessage.REGISTER);
 	}
 
 	public void setUsername(String n)
