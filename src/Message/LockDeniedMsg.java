@@ -7,7 +7,7 @@ public class LockDeniedMsg extends JsonMessage
 
 	public LockDeniedMsg()
 	{
-		setCommand("LOCK_DENIED");
+		setCommand(JsonMessage.LOCK_DENIED);
 	}
 	
 	public void setUsername(String u)

@@ -6,7 +6,7 @@ public class LoginSuccMsg extends JsonMessage
 
 	public LoginSuccMsg()
 	{
-		command = "LOGIN_SUCCESS";
+		setCommand(JsonMessage.LOGIN_SUCCESS);
 	}
 
 	public void setInfo(String i)

@@ -5,6 +5,6 @@ public class LogoutMsg extends RegisterMsg
 
 	public LogoutMsg()
 	{
-		command = "LOGOUT";
+		setCommand(JsonMessage.LOGOUT);
 	}
 }

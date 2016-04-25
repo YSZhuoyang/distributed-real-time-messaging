@@ -7,7 +7,6 @@ public class RegisterFailedMsg extends JsonMessage
 	public RegisterFailedMsg()
 	{
 		setCommand(JsonMessage.REGISTER_FAILED);
-		// TODO Auto-generated constructor stub
 	}
 
 	public void setInfo(String info)

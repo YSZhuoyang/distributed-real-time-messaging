@@ -18,12 +18,6 @@ import activitystreamer.util.Settings;
 public class Server
 {
 	private static final Logger log = LogManager.getLogger();
-	
-	private static String id = "";
-	private static String hostname = null;
-	private static int load = 0;
-	private static int port = 0;
-	
 
 	private static void help(Options options)
 	{
@@ -32,12 +26,6 @@ public class Server
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp("ActivityStreamer.Server", header, options, footer, true);
 		System.exit(-1);
-	}
-	public Server(){
-		id = Settings.nextSecret();
-	}
-	public static void setLoad(int number){
-		load =+ number;
 	}
 	public static void main(String[] args)
 	{

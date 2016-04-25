@@ -1,10 +1,10 @@
 package Message;
 
-public class LoginFailed extends JsonMessage
+public class LoginFailedMsg extends JsonMessage
 {
 	private String info;
 
-	public LoginFailed()
+	public LoginFailedMsg()
 	{
 		setCommand(JsonMessage.LOGIN_FAILED);
 	}

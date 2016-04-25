@@ -8,7 +8,7 @@ public class LockAllowedMsg extends JsonMessage
 
 	public LockAllowedMsg()
 	{
-		setCommand("LOCK_ALLOWED");
+		setCommand(JsonMessage.LOCK_ALLOWED);
 	}
 
 	public void setUsername(String u)

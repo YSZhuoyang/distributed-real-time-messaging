@@ -6,7 +6,7 @@ public class RegistSuccMsg extends JsonMessage
 
 	public RegistSuccMsg()
 	{
-		setCommand("REGISTER_SUCCESS");
+		setCommand(JsonMessage.REGISTER_SUCCESS);
 	}
 
 	public void setInfo(String info)

@@ -4,11 +4,29 @@ public class JsonMessage
 {
 	protected String command = "";
 	
-	public final static String REGISTER_FAILED = "REGISTER_FAILED";
-	public final static String REDIRECT = "REDIRECT";
-	public final static String LOGIN_FAILED = "LOGIN_FAILED";
 	public final static String LOGIN = "LOGIN";
+	public final static String LOGIN_SUCCESS = "LOGIN_SUCCESS";
+	public final static String LOGIN_FAILED = "LOGIN_FAILED";
+	public final static String LOGOUT = "LOGOUT";
+	
 	public final static String REGISTER = "REGISTER";
+	public final static String REGISTER_SUCCESS = "REGISTER_SUCCESS";
+	public final static String REGISTER_FAILED = "REGISTER_FAILED";
+	
+	public final static String ACTIVITY_BROADCAST = "ACTIVITY_BROADCAST";
+	public final static String ACTIVITY_MESSAGE = "ACTIVITY_MESSAGE";
+	
+	public final static String AUTHTENTICATION_FAIL = "AUTHTENTICATION_FAIL";
+	public final static String AUTHENTICATE = "AUTHENTICATE";
+	
+	public final static String LOCK_ALLOWED = "LOCK_ALLOWED";
+	public final static String LOCK_DENIED = "LOCK_DENIED";
+	public final static String LOCK_REQUEST = "LOCK_REQUEST";
+
+	public final static String REDIRECT = "REDIRECT";
+	public final static String INVALID_MESSAGE = "INVALID_MESSAGE";
+	public final static String SERVER_ANNOUNCE = "SERVER_ANNOUNCE";
+	
 	
 	public JsonMessage()
 	{

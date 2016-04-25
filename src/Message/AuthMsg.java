@@ -6,7 +6,7 @@ public class AuthMsg extends JsonMessage
 	
 	public AuthMsg()
 	{
-		command = "AUTHENTICATE";
+		setCommand(JsonMessage.AUTHENTICATE);
 	}
 	
 	public void setSecret(String s)

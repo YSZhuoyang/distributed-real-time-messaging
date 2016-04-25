@@ -6,7 +6,7 @@ public class ActBroadMsg extends JsonMessage
 
 	public ActBroadMsg()
 	{
-		command = "ACTIVITY_BROADCAST";
+		setCommand(JsonMessage.ACTIVITY_BROADCAST);
 	}
 
 	public void setActivity(String a)

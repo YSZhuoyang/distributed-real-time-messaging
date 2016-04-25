@@ -6,7 +6,7 @@ public class InvalidMsg extends JsonMessage
 
 	public InvalidMsg()
 	{
-		command = "INVALID_MESSAGE";
+		setCommand(JsonMessage.INVALID_MESSAGE);
 	}
 
 	public void setInfo(String info)

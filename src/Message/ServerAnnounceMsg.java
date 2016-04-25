@@ -9,7 +9,7 @@ public class ServerAnnounceMsg extends JsonMessage
 
 	public ServerAnnounceMsg()
 	{
-		command = "SERVER_ANNOUNCE";
+		setCommand(JsonMessage.SERVER_ANNOUNCE);
 	}
 	
 	public void setId(String id)

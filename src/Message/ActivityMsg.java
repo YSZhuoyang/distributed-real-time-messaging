@@ -8,7 +8,7 @@ public class ActivityMsg extends RedirectMsg
 
 	public ActivityMsg()
 	{
-		command = "ACTIVITY_MESSAGE";
+		setCommand(JsonMessage.ACTIVITY_MESSAGE);
 	}
 	
 	public void setActivity(String a)

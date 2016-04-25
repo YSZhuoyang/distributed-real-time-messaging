@@ -7,7 +7,7 @@ public class LockRequestMsg extends JsonMessage
 
 	public LockRequestMsg()
 	{
-		setCommand("LOCK_REQUEST");
+		setCommand(JsonMessage.LOCK_REQUEST);
 	}
 
 	public void setUsername(String u)
