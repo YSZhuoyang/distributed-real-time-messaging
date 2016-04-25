@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import Message.*;
+import activitystreamer.Server;
 import activitystreamer.util.Settings;
 
 public class ControlSolution extends Control
@@ -19,6 +20,7 @@ public class ControlSolution extends Control
 	private static String sec = null;
 	private static ArrayList<Connection> serverList = new ArrayList<Connection>();
 	private static ArrayList<Connection> clientList = new ArrayList<Connection>();
+	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<ServerInfo>();
 	private static ArrayList<String> passwordList = new ArrayList<String>();
 	private static int counter = 0;
 	/*
@@ -124,6 +126,7 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
+		
 		log.debug("Receieved: " + msg);
 		
 		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
@@ -132,6 +135,7 @@ public class ControlSolution extends Control
 		switch(msgType)
 		{
 			case "LOGIN":
+				Server.setLoad(1);
 				// Client connect check load balance
 				String secret = receivedJsonObj.get("secret").getAsString();
 				
@@ -142,8 +146,8 @@ public class ControlSolution extends Control
 					clientList.add(con);
 					
 					// Send login successful message
-					
-					log.info("Login_Success");
+					String loginMessage = new Gson().toJson(m);
+					con.writeMsg(loginMessage);
 				}
 				else
 				{
@@ -151,12 +155,15 @@ public class ControlSolution extends Control
 					m.setInfo("Login_Failed");
 					
 					// Send faild info to client
-					
+					String loginMessage = new Gson().toJson(m);
+					con.writeMsg(loginMessage);
 				}
 
 				break;
 				
 				case "REGISTER":
+					Server.setLoad(1);
+					
 					// check load balance
 					// RedirectMsg m = new RedirectMsg();
 
@@ -174,33 +181,40 @@ public class ControlSolution extends Control
 					
 				case "AUTHENTICATE":
 					// Connect with server
-					if (receivedJsonObj.get("secret").getAsString() != (Settings.getSecret()))
+					if (!receivedJsonObj.get("secret").getAsString().equals(Settings.getSecret()))
 					{
 						AuthFailMsg authJson = new AuthFailMsg();
 						authJson.setInfo("Authetication failed");
-						
-						String message = new Gson().toJson(authJson);
-						con.writeMsg(message);
+						String authMessage = new Gson().toJson(authJson);
+						con.writeMsg(authMessage);
+					}
+					else{
+						serverList.add(con);
+						//log.debug("success");
 					}
 					
 					break;
 					
 				case "AUTHENTICATE_FAILED":
 					// print err msg
-					
+					LoginFailed serverAuthJson = new LoginFailed();
+					serverAuthJson.setInfo("Login failed");
+					String serverAuthMessage = new Gson().toJson(serverAuthJson);
+					con.writeMsg(serverAuthMessage);
 					break;
 					
 				case "LOGOUT":
 					// Remove client from the client list
-					
+					clientList.remove(con);
+					log.info("user logout");
 					return true;
 					
 				case "INVALID_MESSAGE":
+					if (receivedJsonObj.get("command").getAsString()=="invalid_message");
 					InvalidMsg invalidMsg = new InvalidMsg();
-					invalidMsg.setInfo("");
-					
-					String message = new Gson().toJson(invalidMsg);
-					con.writeMsg(message);
+					invalidMsg.setInfo("Invalid_Message");
+					String invalidMessage = new Gson().toJson(invalidMsg);
+					con.writeMsg(invalidMessage);
 					
 					break;
 				case "ACTIVITY_MESSAGE":
@@ -210,7 +224,18 @@ public class ControlSolution extends Control
 					
 				case "SERVER_ANNOUNCE":
 					// ...
-					
+					int index =lookup(receivedJsonObj.get("id").getAsString());
+					if(index!=-1){
+						serverInfoList.get(index).setServerLoad(receivedJsonObj.get("load").getAsInt());
+					}
+					else{
+						ServerInfo s = new ServerInfo();
+						s.setServerLoad(receivedJsonObj.get("load").getAsInt());
+						s.setId(receivedJsonObj.get("id").getAsString());
+						s.setRemoteHostname(receivedJsonObj.get("remoteHostname").getAsString());
+						s.setRemotePort(receivedJsonObj.get("remotePort").getAsInt());
+						serverInfoList.add(s);
+					}
 					break;
 					
 				case "ACTIVITY_BROADCAST":
@@ -236,20 +261,27 @@ public class ControlSolution extends Control
 				default:
 					break;
 		}
-		
-		serverList.add(con);
-
 		// if(serverList.size() > 0)
 		// log.debug("This is from the 1st server that you connect!!");
-
+	
 		return false;
+		
 	}
-
+	public static int lookup(String id){
+		int index = -1;
+		for(int i=0; i<serverInfoList.size();i++){
+			if(serverInfoList.get(i).getId().equals(id))
+				index = i;
+		}
+		
+		return index;
+	}
 	/*
 	 * Called once every few seconds Return true if server should shut down,
 	 * false otherwise
 	 */
 	@Override
+	
 	public boolean doActivity()
 	{
 		/*
@@ -267,6 +299,7 @@ public class ControlSolution extends Control
 	 */
 	public void run()
 	{
+		//authentication check
 		/*
 		 * try { ServerSocket listenSocket = new
 		 * ServerSocket(Settings.getLocalPort());

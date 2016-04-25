@@ -19,7 +19,7 @@ public class Server
 {
 	private static final Logger log = LogManager.getLogger();
 	
-	private static int id = 0;
+	private static String id = "";
 	private static String hostname = null;
 	private static int load = 0;
 	private static int port = 0;
@@ -33,7 +33,12 @@ public class Server
 		formatter.printHelp("ActivityStreamer.Server", header, options, footer, true);
 		System.exit(-1);
 	}
-
+	public Server(){
+		id = Settings.nextSecret();
+	}
+	public static void setLoad(int number){
+		load =+ number;
+	}
 	public static void main(String[] args)
 	{
 
