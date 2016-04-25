@@ -1,12 +1,12 @@
 package Message;
 
-public class RegistFaildMsh extends JsonMessage
+public class RegisterFailedMsg extends JsonMessage
 {
 	private String info = "";
 
-	public RegistFaildMsh()
+	public RegisterFailedMsg()
 	{
-		setCommand("REGISTER_FAILED");
+		setCommand(JsonMessage.REGISTER_FAILED);
 		// TODO Auto-generated constructor stub
 	}
 

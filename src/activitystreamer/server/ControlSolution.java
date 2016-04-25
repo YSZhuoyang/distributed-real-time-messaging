@@ -164,7 +164,11 @@ public class ControlSolution extends Control
 					passwordList.add(receivedJsonObj.get("secret").getAsString());
 					RegistSuccMsg m = new RegistSuccMsg();
 					m.setInfo("Register_Succ");
+					String registSuccJsonStr = new Gson().toJson(m);
+					
 					log.info("Register_Succ");
+					
+					con.writeMsg(registSuccJsonStr);
 					
 					break;
 					

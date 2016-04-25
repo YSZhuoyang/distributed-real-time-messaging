@@ -7,7 +7,7 @@ public class RedirectMsg extends JsonMessage
 
 	public RedirectMsg()
 	{
-		command = "REDIRECT";
+		setCommand(JsonMessage.REDIRECT);
 	}
 
 	public void setHost(String h)

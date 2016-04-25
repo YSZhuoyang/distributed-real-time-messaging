@@ -1,12 +1,17 @@
 package activitystreamer.client;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import Message.*;
 import activitystreamer.util.Settings;
@@ -16,11 +21,14 @@ public class ClientSolution extends Thread
 	private static final Logger log = LogManager.getLogger();
 	private static ClientSolution clientSolution;
 	private TextFrame textFrame;
-
+	
 	/*
 	 * additional variables
 	 */
+	private Socket socket;
+	private PrintWriter writer;
 
+	
 	// this is a singleton object
 	public static ClientSolution getInstance()
 	{
@@ -39,24 +47,11 @@ public class ClientSolution extends Thread
 		 */
 		
 		// Connect to a server host
+		
+		// Test: register only
 		if (Settings.getRemoteHostname() != null)
 		{
-			try
-			{
-				RegisterMsg m = new RegisterMsg();
-				m.setUsername(Settings.getUsername());
-				m.setSecret(Settings.getSecret());
-				String loginMessage = new Gson().toJson(m);
-
-				// Try to establish connection
-				Socket socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-				PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
-				writer.println(loginMessage);
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
+			register();
 		}
 		
 		// open the gui
@@ -86,28 +81,101 @@ public class ClientSolution extends Thread
 	@Override
 	public void run()
 	{
-		// Receive redirection / login succ / login fail message
+		String receivedMsg;
+
+		log.debug("Client started");
 		
-		
-		/*Socket socket = new Socket();
-		
-		while (true)
+		try
 		{
-			try
+			DataInputStream in = new DataInputStream(socket.getInputStream());
+			BufferedReader inreader = new BufferedReader(new InputStreamReader(in));
+			
+			while (true)
 			{
-				DataInputStream in = new DataInputStream(socket.getInputStream());
-				DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-				BufferedReader inreader = new BufferedReader(new InputStreamReader(in));
-				PrintWriter outwriter = new PrintWriter(out, true);
-			}
-			catch (IOException e)
-			{
+				receivedMsg = inreader.readLine();
+				
+				log.debug("Client received: " + receivedMsg);
+				
+				JsonObject receivedJson = new Gson().fromJson(receivedMsg, JsonObject.class);
+				String registerState = receivedJson.get("command").getAsString();
+				
+				switch (registerState)
+				{
+					case JsonMessage.REGISTER_FAILED:
+						log.info("Register failed");
+						System.exit(0);
+						
+					case JsonMessage.REDIRECT:
+						log.info("Redirect");
+						
+						// reconnect
+						String newHost = receivedJson.get("host").getAsString();
+						int newPort = receivedJson.get("port").getAsInt();
+						
+						Settings.setRemoteHostname(newHost);
+						Settings.setRemotePort(newPort);
+						
+						// Testing: register only
+						register();
+						
+						break;
+						
+					case JsonMessage.LOGIN_FAILED:
+						log.info("Login failed");
+						System.exit(0);
+					
+					default:
+						break;
+				}
 				
 			}
-		}*/
+		}
+		catch (IOException e)
+		{
+			System.err.println("Client receiving msg failed");
+		}
 	}
 
 	/*
 	 * additional methods
 	 */
+	private void register()
+	{
+		try
+		{
+			RegisterMsg registerMsg = new RegisterMsg();
+			registerMsg.setUsername(Settings.getUsername());
+			registerMsg.setSecret(Settings.getSecret());
+			String registerMessage = new Gson().toJson(registerMsg);
+
+			// Try to establish connection
+			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+			writer = new PrintWriter(socket.getOutputStream(), true);
+			writer.println(registerMessage);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private void login()
+	{
+		try
+		{
+			LoginMsg loginMsg = new LoginMsg();
+			loginMsg.setUsername(Settings.getUsername());
+			loginMsg.setSecret(Settings.getSecret());
+			String loginMessage = new Gson().toJson(loginMsg);
+
+			// Try to establish connection
+			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+			writer = new PrintWriter(socket.getOutputStream(), true);
+			writer.println(loginMessage);
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
 }

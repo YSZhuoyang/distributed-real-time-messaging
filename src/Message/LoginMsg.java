@@ -7,7 +7,7 @@ public class LoginMsg extends JsonMessage
 
 	public LoginMsg()
 	{
-		setCommand("LOGIN");
+		setCommand(JsonMessage.LOGIN);
 	}
 
 	public void setUsername(String n)
