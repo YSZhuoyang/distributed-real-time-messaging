@@ -19,6 +19,9 @@ public class Settings
 	private static String secret = null;
 	private static String username = "anonymous";
 	
+	// Additional data
+	private static int numClientConnections = 0;
+	
 
 	public static int getLocalPort()
 	{
@@ -116,6 +119,12 @@ public class Settings
 	public static String nextSecret()
 	{
 		return new BigInteger(130, random).toString(32);
+	}
+	
+	// Additional methods
+	public static int getNumClientConnections()
+	{
+		return numClientConnections;
 	}
 
 }

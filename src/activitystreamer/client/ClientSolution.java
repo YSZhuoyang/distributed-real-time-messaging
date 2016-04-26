@@ -97,9 +97,9 @@ public class ClientSolution extends Thread
 				log.debug("Client received: " + receivedMsg);
 				
 				JsonObject receivedJson = new Gson().fromJson(receivedMsg, JsonObject.class);
-				String registerState = receivedJson.get("command").getAsString();
+				String state = receivedJson.get("command").getAsString();
 				
-				switch (registerState)
+				switch (state)
 				{
 					case JsonMessage.REGISTER_FAILED:
 						log.info("Register failed");
@@ -115,8 +115,7 @@ public class ClientSolution extends Thread
 						Settings.setRemoteHostname(newHost);
 						Settings.setRemotePort(newPort);
 						
-						// Testing: register only
-						register();
+						login();
 						
 						break;
 						

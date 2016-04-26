@@ -3,9 +3,9 @@ package Message;
 public class ServerAnnounceMsg extends JsonMessage
 {
 	private String id = "";
-	private String load = "";
 	private String host = "";
-	private String port = "";
+	private int load = 0;
+	private int port = 0;
 
 	public ServerAnnounceMsg()
 	{
@@ -22,12 +22,12 @@ public class ServerAnnounceMsg extends JsonMessage
 		this.host = host;
 	}
 	
-	public void setPort(String port)
+	public void setPort(int port)
 	{
 		this.port = port;
 	}
 	
-	public void setLoad(String load)
+	public void setLoad(int load)
 	{
 		this.load = load;
 	}

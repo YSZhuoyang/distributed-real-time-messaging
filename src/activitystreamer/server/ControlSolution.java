@@ -21,16 +21,18 @@ public class ControlSolution extends Control
 	/*
 	 * additional variables as needed
 	 */
-	private ArrayList<Connection> serverList = new ArrayList<>();
+	private static ArrayList<Connection> serverList = new ArrayList<>();
 	private ArrayList<Connection> clientList = new ArrayList<>();
+	
+	// All servers except itself
 	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
 	private ArrayList<String> clientSecretList = new ArrayList<>();
 
 	// Assuming that id is secret
-	private String secret;
-	private String id;
+	//private String secret;
+	//private String id;
 	private int numClientConnections = 0;
-	private ServerInfo serverInfo;
+	//private ServerInfo serverInfo;
 	
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
@@ -47,7 +49,7 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
-		id = Settings.nextSecret();
+		//id = Settings.nextSecret();
 
 		/*
 		 * Do some further initialization here if necessary
@@ -57,7 +59,7 @@ public class ControlSolution extends Control
 		if (Settings.getRemoteHostname() == null)
 		{
 			// generate secrete keys here
-			secret = Settings.nextSecret();
+			String secret = Settings.nextSecret();
 			Settings.setSecret(secret);
 
 			log.info("The secret key of this root server is: " + secret);
@@ -68,18 +70,20 @@ public class ControlSolution extends Control
 		{
 			// check if we should initiate a connection and do so if necessary
 			initiateConnection();
+			
+			ServerInfo serverInfo = new ServerInfo();
+			serverInfo.setId(Settings.getSecret());
+			serverInfo.setRemoteHostname(Settings.getLocalHostname());
+			serverInfo.setRemotePort(Settings.getLocalPort());
+			serverInfo.setServerLoad(0);
+			
+			serverInfoList.add(serverInfo);
 		}
 		
-		/*serverInfo = new ServerInfo();
-		serverInfo.setId(id);
-		serverInfo.setRemoteHostname(Settings.getLocalHostname());
-		serverInfo.setRemotePort(Settings.getLocalPort());
-		serverInfo.setServerLoad(0);
-
 		//serverInfoList.add(serverInfo);
 		//log.debug("Server counter: " + serverInfoList.size());
-		log.debug("Secret: " + secret);
-		*/
+		log.debug("Secret: " + Settings.getSecret());
+		
 		
 		// start the server's activity loop
 		// it will call doActivity every few seconds
@@ -107,18 +111,18 @@ public class ControlSolution extends Control
 	@Override
 	public Connection outgoingConnection(Socket s) throws IOException
 	{
-		Connection con = super.outgoingConnection(s);
-		// con.writeMsg("hi, this is a new server yelling at you!!!");
-		Gson gson = new Gson();
-		AuthMsg AuthJson = new AuthMsg();
-		// Set values
-		AuthJson.setSecret(Settings.getSecret());
-		String m = gson.toJson(AuthJson);
-		con.writeMsg(m.toString());
-
 		/*
 		 * do additional things here
 		 */
+		Connection con = super.outgoingConnection(s);
+		
+		AuthMsg AuthJson = new AuthMsg();
+		AuthJson.setSecret(Settings.getSecret());
+		String m = new Gson().toJson(AuthJson);
+		serverList.add(con);
+		
+		con.writeMsg(m.toString());
+
 		return con;
 	}
 
@@ -169,27 +173,30 @@ public class ControlSolution extends Control
 
 					return true;
 				}
+				
+				LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
+				loginSuccMsg.setInfo("Login successful");
+				String loginSuccJsonStr = new Gson().toJson(loginSuccMsg);
 
-				// Check load balance
+				log.info("Login_Success");
+
+				con.writeMsg(loginSuccJsonStr);
+
+				// Find a server with less client connection
 				server = loadBalance();
 
 				if (server == null)
 				{
-					// check lock
-
-					LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
-					loginSuccMsg.setInfo("Login successful");
-					String loginSuccJsonStr = new Gson().toJson(loginSuccMsg);
-
-					log.info("Login_Success");
-
-					con.writeMsg(loginSuccJsonStr);
 					numClientConnections++;
 
 					break;
 				}
 				else
 				{
+					// Send lock request
+					
+					
+					
 					RedirectMsg redirectMsg = new RedirectMsg();
 					redirectMsg.setHost(server.getRemoteHostname());
 					redirectMsg.setPort("" + server.getRemotePort());
@@ -218,39 +225,16 @@ public class ControlSolution extends Control
 
 					return true;
 				}
+				
+				clientSecretList.add(secret);
+				RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
+				registerSuccMsg.setInfo("Register_Succ");
+				String registSuccJsonStr = new Gson().toJson(registerSuccMsg);
+				con.writeMsg(registSuccJsonStr);
+				numClientConnections++;
 
-				// Check load balance
-				server = loadBalance();
-
-				if (server == null)
-				{
-					// check lock
-
-					clientSecretList.add(secret);
-					RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
-					registerSuccMsg.setInfo("Register_Succ");
-					String registSuccJsonStr = new Gson().toJson(registerSuccMsg);
-
-					log.info("Register_Success");
-
-					con.writeMsg(registSuccJsonStr);
-					numClientConnections++;
-
-					break;
-				}
-				else
-				{
-					RedirectMsg redirectMsg = new RedirectMsg();
-					redirectMsg.setHost(server.getRemoteHostname());
-					redirectMsg.setPort("" + server.getRemotePort());
-					String redirectMsgJsonStr = new Gson().toJson(redirectMsg);
-
-					log.info("Redirected");
-
-					con.writeMsg(redirectMsgJsonStr);
-
-					return true;
-				}
+				log.info("Register_Success");
+				break;
 
 			case JsonMessage.AUTHENTICATE:
 				secret = receivedJsonObj.get("secret").getAsString();
@@ -277,10 +261,10 @@ public class ControlSolution extends Control
 				break;
 
 			case JsonMessage.AUTHTENTICATION_FAIL:
-				// print err msg
 				log.info("Authentication failed");
 
-				return true;
+				System.exit(0);
+				//return true;
 
 			case JsonMessage.LOGOUT:
 				// Remove client from the client connection list
@@ -307,21 +291,46 @@ public class ControlSolution extends Control
 				break;
 
 			case JsonMessage.SERVER_ANNOUNCE:
-				// ...
-				int index = lookup(receivedJsonObj.get("id").getAsString());
-				if (index != -1)
+				log.info("Server announce received");
+				
+				secret = receivedJsonObj.get("id").getAsString();
+				ServerInfo serverInfo = findServer(secret);
+				
+				if (serverInfo == null)
 				{
-					serverInfoList.get(index).setServerLoad(receivedJsonObj.get("load").getAsInt());
+					serverInfo = new ServerInfo();
+					serverInfo.setId(secret);
+					serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
+					serverInfo.setRemoteHostname(receivedJsonObj.get("host").getAsString());
+					serverInfo.setRemotePort(receivedJsonObj.get("port").getAsInt());
+					serverInfoList.add(serverInfo);
 				}
-				else
+
+				// Inform others
+				ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
+				serverAnnounceMsg.setId(serverInfo.getId());
+				serverAnnounceMsg.setHostname(serverInfo.getRemoteHostname());
+				serverAnnounceMsg.setLoad(serverInfo.getServerLoad());
+				serverAnnounceMsg.setPort(serverInfo.getRemotePort());
+				
+				String serverAnnounceJsonStr = new Gson().toJson(serverAnnounceMsg);
+				
+				log.debug("Connection number: " + serverList.size());
+				
+				for (Connection connection : serverList)
 				{
-					ServerInfo s = new ServerInfo();
-					s.setServerLoad(receivedJsonObj.get("load").getAsInt());
-					s.setId(receivedJsonObj.get("id").getAsString());
-					s.setRemoteHostname(receivedJsonObj.get("remoteHostname").getAsString());
-					s.setRemotePort(receivedJsonObj.get("remotePort").getAsInt());
-					serverInfoList.add(s);
+					if (con.getSocket().getLocalPort() != connection.getSocket().getLocalPort())
+					{
+						connection.writeMsg(serverAnnounceJsonStr);
+						
+						log.debug("Forwarded!!!!!!!!!");
+					}
+					else
+					{
+						log.debug("Same server!!!!!!!!!");
+					}
 				}
+
 				break;
 
 			case JsonMessage.ACTIVITY_BROADCAST:
@@ -354,16 +363,25 @@ public class ControlSolution extends Control
 
 	}
 
-	public int lookup(String id)
+	public ServerInfo findServer(String id)
 	{
-		int index = -1;
-		for (int i = 0; i < serverInfoList.size(); i++)
+		//int index = -1;
+		
+		for (ServerInfo serverInfo : serverInfoList)
+		{
+			if (serverInfo.getId().equals(id))
+			{
+				return serverInfo;
+			}
+		}
+		
+		/*for (int i = 0; i < serverInfoList.size(); i++)
 		{
 			if (serverInfoList.get(i).getId().equals(id))
 				index = i;
-		}
+		}*/
 
-		return index;
+		return null;
 	}
 
 	public void generateMsg(String hostname, String port)
@@ -397,38 +415,30 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-		/*
-		 * if(serverList.size()>0) serverList.get(0).writeMsg(
-		 * "hi, this is the first msg root send to server 1.");
-		 */
+		ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
+		serverAnnounceMsg.setHostname(Settings.getLocalHostname());
+		serverAnnounceMsg.setId(Settings.getSecret());
+		serverAnnounceMsg.setLoad(Settings.getNumClientConnections());
+		serverAnnounceMsg.setPort(Settings.getLocalPort());
+		
+		String serverAnnounceJsonStr = new Gson().toJson(serverAnnounceMsg);
+		
+		for (Connection con : serverList)
+		{
+			con.writeMsg(serverAnnounceJsonStr);
+		}
+		
+		log.info("Server announcement sent");
+		
 		return false;
 	}
 	
-	public ServerInfo getServerInfo()
+	/*public ServerInfo getServerInfo()
 	{
 		return serverInfo;
-	}
+	}*/
 
 	/*
 	 * Other methods as needed
 	 */
-	public void run()
-	{
-		// authentication check
-
-		// try {
-		// Listener listenSocket = new ServerSocket(Settings.getLocalPort());
-		// while(true) {
-		// System.out.println("Server listening for a connection");
-		// Socket clientSocket = listenSocket.accept();
-		//
-		// System.out.println("Received connection ");
-		// Connection c = new Connection(clientSocket); } }
-		// catch(IOException e) {
-		// System.out.println("Listen socket:"+e.getMessage());
-		// }
-		//
-		ActBroadMsg m = new ActBroadMsg();
-
-	}
 }
