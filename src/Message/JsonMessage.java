@@ -1,5 +1,8 @@
 package Message;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
 public class JsonMessage
 {
 	protected String command = "";
@@ -36,5 +39,10 @@ public class JsonMessage
 	protected void setCommand(String c)
 	{
 		command = c;
+	}
+	
+	public String toJsonString()
+	{
+		return new Gson().toJson(this);
 	}
 }

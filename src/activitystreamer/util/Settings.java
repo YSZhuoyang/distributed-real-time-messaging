@@ -20,7 +20,7 @@ public class Settings
 	private static String username = "anonymous";
 	
 	// Additional data
-	private static int numClientConnections = 0;
+	//private static int numClientConnections = 0;
 	
 
 	public static int getLocalPort()
@@ -122,9 +122,9 @@ public class Settings
 	}
 	
 	// Additional methods
-	public static int getNumClientConnections()
+	/*public static int getNumClientConnections()
 	{
 		return numClientConnections;
-	}
+	}*/
 
 }

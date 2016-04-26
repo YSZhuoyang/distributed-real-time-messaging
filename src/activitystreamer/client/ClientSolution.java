@@ -2,7 +2,6 @@ package activitystreamer.client;
 
 import java.io.BufferedReader;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -145,7 +144,7 @@ public class ClientSolution extends Thread
 			RegisterMsg registerMsg = new RegisterMsg();
 			registerMsg.setUsername(Settings.getUsername());
 			registerMsg.setSecret(Settings.getSecret());
-			String registerMessage = new Gson().toJson(registerMsg);
+			String registerMessage = registerMsg.toJsonString();
 
 			// Try to establish connection
 			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
@@ -165,7 +164,7 @@ public class ClientSolution extends Thread
 			LoginMsg loginMsg = new LoginMsg();
 			loginMsg.setUsername(Settings.getUsername());
 			loginMsg.setSecret(Settings.getSecret());
-			String loginMessage = new Gson().toJson(loginMsg);
+			String loginMessage = loginMsg.toJsonString();
 
 			// Try to establish connection
 			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());

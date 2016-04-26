@@ -1,7 +1,6 @@
 package activitystreamer.server;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -22,17 +21,15 @@ public class ControlSolution extends Control
 	 * additional variables as needed
 	 */
 	private static ArrayList<Connection> serverList = new ArrayList<>();
-	private ArrayList<Connection> clientList = new ArrayList<>();
+	private static ArrayList<Connection> clientList = new ArrayList<>();
 	
 	// All servers except itself
 	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
-	private ArrayList<String> clientSecretList = new ArrayList<>();
+	private static ArrayList<String> clientSecretList = new ArrayList<>();
 
 	// Assuming that id is secret
-	//private String secret;
-	//private String id;
 	private int numClientConnections = 0;
-	//private ServerInfo serverInfo;
+	//private String id;
 	
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
@@ -116,13 +113,12 @@ public class ControlSolution extends Control
 		 */
 		Connection con = super.outgoingConnection(s);
 		
-		AuthMsg AuthJson = new AuthMsg();
-		AuthJson.setSecret(Settings.getSecret());
-		String m = new Gson().toJson(AuthJson);
+		AuthMsg authJson = new AuthMsg();
+		authJson.setSecret(Settings.getSecret());
+		String authJsonStr = authJson.toJsonString();
+		con.writeMsg(authJsonStr);
 		serverList.add(con);
 		
-		con.writeMsg(m.toString());
-
 		return con;
 	}
 
@@ -165,7 +161,7 @@ public class ControlSolution extends Control
 				{
 					LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
 					loginFailedMsg.setInfo("Register failed, secret does not exist!");
-					String registFailedJsonStr = new Gson().toJson(loginFailedMsg);
+					String registFailedJsonStr = loginFailedMsg.toJsonString();
 
 					log.info("Register failed. Secret already exists!");
 
@@ -176,7 +172,7 @@ public class ControlSolution extends Control
 				
 				LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
 				loginSuccMsg.setInfo("Login successful");
-				String loginSuccJsonStr = new Gson().toJson(loginSuccMsg);
+				String loginSuccJsonStr = loginSuccMsg.toJsonString();
 
 				log.info("Login_Success");
 
@@ -200,7 +196,7 @@ public class ControlSolution extends Control
 					RedirectMsg redirectMsg = new RedirectMsg();
 					redirectMsg.setHost(server.getRemoteHostname());
 					redirectMsg.setPort("" + server.getRemotePort());
-					String redirectMsgJsonStr = new Gson().toJson(redirectMsg);
+					String redirectMsgJsonStr = redirectMsg.toJsonString();
 
 					log.info("Redirected");
 
@@ -217,7 +213,7 @@ public class ControlSolution extends Control
 				{
 					RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
 					registerFailedMsg.setInfo("Register failed, secret already exists!");
-					String registFailedJsonStr = new Gson().toJson(registerFailedMsg);
+					String registFailedJsonStr = registerFailedMsg.toJsonString();
 
 					log.info("Register failed. Secret already exists!");
 
@@ -229,7 +225,7 @@ public class ControlSolution extends Control
 				clientSecretList.add(secret);
 				RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
 				registerSuccMsg.setInfo("Register_Succ");
-				String registSuccJsonStr = new Gson().toJson(registerSuccMsg);
+				String registSuccJsonStr = registerSuccMsg.toJsonString();
 				con.writeMsg(registSuccJsonStr);
 				numClientConnections++;
 
@@ -246,7 +242,7 @@ public class ControlSolution extends Control
 					
 					AuthFailMsg authFailedMsg = new AuthFailMsg();
 					authFailedMsg.setInfo("Authetication failed");
-					String authFailedJsonStr = new Gson().toJson(authFailedMsg);
+					String authFailedJsonStr = authFailedMsg.toJsonString();
 					con.writeMsg(authFailedJsonStr);
 					
 					return true;
@@ -279,7 +275,7 @@ public class ControlSolution extends Control
 					;
 				InvalidMsg invalidMsg = new InvalidMsg();
 				invalidMsg.setInfo("Invalid_Message");
-				String invalidMessage = new Gson().toJson(invalidMsg);
+				String invalidMessage = invalidMsg.toJsonString();
 				con.writeMsg(invalidMessage);
 
 				break;
@@ -313,7 +309,7 @@ public class ControlSolution extends Control
 				serverAnnounceMsg.setLoad(serverInfo.getServerLoad());
 				serverAnnounceMsg.setPort(serverInfo.getRemotePort());
 				
-				String serverAnnounceJsonStr = new Gson().toJson(serverAnnounceMsg);
+				String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 				
 				log.debug("Connection number: " + serverList.size());
 				
@@ -356,17 +352,13 @@ public class ControlSolution extends Control
 			default:
 				break;
 		}
-		// if(serverList.size() > 0)
-		// log.debug("This is from the 1st server that you connect!!");
-
+		
 		return false;
 
 	}
 
 	public ServerInfo findServer(String id)
 	{
-		//int index = -1;
-		
 		for (ServerInfo serverInfo : serverInfoList)
 		{
 			if (serverInfo.getId().equals(id))
@@ -375,12 +367,6 @@ public class ControlSolution extends Control
 			}
 		}
 		
-		/*for (int i = 0; i < serverInfoList.size(); i++)
-		{
-			if (serverInfoList.get(i).getId().equals(id))
-				index = i;
-		}*/
-
 		return null;
 	}
 
@@ -418,10 +404,10 @@ public class ControlSolution extends Control
 		ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
 		serverAnnounceMsg.setHostname(Settings.getLocalHostname());
 		serverAnnounceMsg.setId(Settings.getSecret());
-		serverAnnounceMsg.setLoad(Settings.getNumClientConnections());
-		serverAnnounceMsg.setPort(Settings.getLocalPort());
+		serverAnnounceMsg.setLoad(numClientConnections);
+		serverAnnounceMsg.setPort(numClientConnections);
 		
-		String serverAnnounceJsonStr = new Gson().toJson(serverAnnounceMsg);
+		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 		
 		for (Connection con : serverList)
 		{
@@ -432,11 +418,6 @@ public class ControlSolution extends Control
 		
 		return false;
 	}
-	
-	/*public ServerInfo getServerInfo()
-	{
-		return serverInfo;
-	}*/
 
 	/*
 	 * Other methods as needed
