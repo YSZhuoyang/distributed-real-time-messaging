@@ -32,8 +32,7 @@ public class ControlSolution extends Control
 	// Assuming that id is secret
 	//private static int numClientConnections = 0;
 	private static String id;
-	//private static boolean lockAllowed;
-	//private static boolean lockDenied;
+	
 	
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
@@ -72,14 +71,6 @@ public class ControlSolution extends Control
 		{
 			// check if we should initiate a connection and do so if necessary
 			initiateConnection();
-			
-			/*ServerInfo serverInfo = new ServerInfo();
-			serverInfo.setId(id);
-			serverInfo.setRemoteHostname(Settings.getLocalHostname());
-			serverInfo.setRemotePort(Settings.getLocalPort());
-			serverInfo.setServerLoad(0);
-			
-			serverInfoList.add(serverInfo);*/
 		}
 		
 		log.debug("Secret: " + Settings.getSecret());		
@@ -317,30 +308,7 @@ public class ControlSolution extends Control
 		
 		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 		
-		/*for (ServerInfo serverInfo : serverInfoList)
-		{
-			if (serverInfo.connected())
-			{
-				Connection connection = serverInfo.getConnection();
-				
-				connection.writeMsg(serverAnnounceJsonStr);
-			}
-			else
-			{
-				try
-				{
-					Socket socket = new Socket(serverInfo.getRemoteHostname(), serverInfo.getRemotePort());
-					Connection connection = new Connection(socket);
-					
-					connection.writeMsg(serverAnnounceJsonStr);
-				}
-				catch (Exception e)
-				{
-					log.debug("Sending server announce failed");
-				}
-			}
-		}*/
-		
+		// Broad server announce to adjacent servers
 		for (Connection con : serverConnectionList)
 		{
 			con.writeMsg(serverAnnounceJsonStr);
@@ -430,7 +398,6 @@ public class ControlSolution extends Control
 		lockInfo.setConnection(con);
 		
 		lockInfoList.add(lockInfo);
-		clientConnectionList.add(con);
 		
 		// Broadcast lock request
 		LockRequestMsg lockRequestMsg = new LockRequestMsg();
@@ -440,14 +407,6 @@ public class ControlSolution extends Control
 		String lockRequestJsonStr = lockRequestMsg.toJsonString();
 		
 		broadcastToAllServers(lockRequestJsonStr);
-		
-		/*for (Connection connection : serverConnectionList)
-		{
-			if (connection.getSocket().getLocalPort() != con.getSocket().getLocalPort())
-			{
-				connection.writeMsg(lockRequestJsonStr);
-			}
-		}*/
 		
 		return false;
 	}
@@ -485,6 +444,7 @@ public class ControlSolution extends Control
 		String id = receivedJsonObj.get("id").getAsString();
 		ServerInfo serverInfo = findServer(id);
 		
+		// This is a new server
 		if (serverInfo == null)
 		{
 			serverInfo = new ServerInfo();
@@ -495,6 +455,11 @@ public class ControlSolution extends Control
 			serverInfo.setConnected(true);
 			serverInfo.setConnection(con);
 			serverInfoList.add(serverInfo);
+		}
+		// This is a known server, update server load info
+		else
+		{
+			serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
 		}
 
 		// Inform others to update the server list
@@ -507,48 +472,6 @@ public class ControlSolution extends Control
 		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 		
 		log.debug("Connection number: " + serverConnectionList.size());
-		
-		/*for (ServerInfo info : serverInfoList)
-		{
-			if (info.getRemotePort() != con.getSocket().getLocalPort())
-			{
-				if (info.connected())
-				{
-					Connection connection = info.getConnection();
-					
-					connection.writeMsg(serverAnnounceJsonStr);
-				}
-				else
-				{
-					try
-					{
-						Socket socket = new Socket(info.getRemoteHostname(), info.getRemotePort());
-						Connection connection = new Connection(socket);
-						
-						connection.writeMsg(serverAnnounceJsonStr);
-					}
-					catch (IOException e)
-					{
-						e.printStackTrace();
-					}
-					
-					
-
-					/*ServerInfo serverInfo = new ServerInfo();
-					serverInfo.setConnected(true);
-					serverInfo.setId(authJsonStr);
-					
-					serverInfoList.add(e)*/
-					
-				/*}
-				
-				log.debug("Forwarded!!!!!!!!!");
-			}
-			else
-			{
-				log.debug("Same server!!!!!!!!!");
-			}
-		}*/
 		
 		// Send to adjacent servers
 		for (Connection connection : serverConnectionList)
@@ -575,6 +498,7 @@ public class ControlSolution extends Control
 		String id = receivedJsonObj.get("server").getAsString();
 		
 		boolean registerSucceed = false;
+		
 		LockInfo lockInfoToBeDeleted = null;
 		
 		for (LockInfo lockInfo : lockInfoList)
@@ -596,7 +520,6 @@ public class ControlSolution extends Control
 					Connection clientConnection = lockInfo.getConnection();
 					
 					clientConnection.writeMsg(registSuccJsonStr);
-					clientConnectionList.add(clientConnection);
 					clientInfoList.put(username, secret);
 					lockInfoList.remove(lockInfo);
 					
@@ -606,6 +529,30 @@ public class ControlSolution extends Control
 					log.info("Register_Success");
 					
 					registerSucceed = true;
+					
+					// Find a server with less client connection
+					ServerInfo serverInfo = loadBalance();
+
+					// Connect to this server
+					if (serverInfo == null)
+					{
+						clientConnectionList.add(con);
+					}
+					// Connect to another server
+					else
+					{
+						log.info("Redirected");
+
+						RedirectMsg redirectMsg = new RedirectMsg();
+						redirectMsg.setHost(serverInfo.getRemoteHostname());
+						redirectMsg.setPort("" + serverInfo.getRemotePort());
+						String redirectMsgJsonStr = redirectMsg.toJsonString();
+						clientConnection.writeMsg(redirectMsgJsonStr);
+
+						// Wait until writeMsg is done?
+						clientConnection.closeCon();
+					}
+					
 					break;
 				}
 			}

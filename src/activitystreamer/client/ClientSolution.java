@@ -107,8 +107,8 @@ public class ClientSolution extends Thread
 					case JsonMessage.REDIRECT:
 						log.info("Redirect");
 						
-						socket.close();
-						writer.close();
+						//socket.close();
+						//writer.close();
 						
 						// reconnect
 						log.info("Connect to another server");
@@ -135,7 +135,7 @@ public class ClientSolution extends Thread
 		}
 		catch (IOException e)
 		{
-			System.err.println("Client receiving msg failed");
+			System.err.println("Client receiving msg failed: " + e.getMessage());
 		}
 	}
 
