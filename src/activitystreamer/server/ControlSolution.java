@@ -27,13 +27,13 @@ public class ControlSolution extends Control
 	// All servers except itself
 	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
 	private static HashMap<String, Boolean> lockInfoList = new HashMap<>();
-	private static ArrayList<String> clientSecretList = new ArrayList<>();
+	private static HashMap<String, String> clientInfoList = new HashMap<>();
 
 	// Assuming that id is secret
 	private static int numClientConnections = 0;
+	private static String id;
 	//private static boolean lockAllowed;
 	//private static boolean lockDenied;
-	//private String id;
 	
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
@@ -50,7 +50,8 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
-		//id = Settings.nextSecret();
+		
+		id = Settings.nextSecret();
 
 		/*
 		 * Do some further initialization here if necessary
@@ -73,7 +74,7 @@ public class ControlSolution extends Control
 			initiateConnection();
 			
 			ServerInfo serverInfo = new ServerInfo();
-			serverInfo.setId(Settings.getSecret());
+			serverInfo.setId(id);
 			serverInfo.setRemoteHostname(Settings.getLocalHostname());
 			serverInfo.setRemotePort(Settings.getLocalPort());
 			serverInfo.setServerLoad(0);
@@ -153,9 +154,6 @@ public class ControlSolution extends Control
 
 		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
 		String msgType = receivedJsonObj.get("command").getAsString();
-		String secret;
-		String username;
-		ServerInfo server;
 
 		switch (msgType)
 		{
@@ -215,13 +213,13 @@ public class ControlSolution extends Control
 
 			case JsonMessage.LOCK_ALLOWED:
 				// ...
-				secret = receivedJsonObj.get("id").getAsString();
+				id = receivedJsonObj.get("id").getAsString();
 				
 				for (ServerInfo info : serverInfoList)
 				{
-					if (secret.equals(info.getId()))
+					if (id.equals(info.getId()))
 					{
-						lockInfoList.put(secret, true);
+						lockInfoList.put(id, true);
 						
 						break;
 					}
@@ -242,7 +240,7 @@ public class ControlSolution extends Control
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 		
-		if (hasClientInfo(secret))
+		if (hasClientInfo(username, secret))
 		{
 			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
 			lockDeniedMsg.setUsername(username);
@@ -265,17 +263,9 @@ public class ControlSolution extends Control
 		return false;
 	}
 
-	private boolean hasClientInfo(String secret)
+	private boolean hasClientInfo(String username, String secret)
 	{
-		for (String clientSecret : clientSecretList)
-		{
-			if (clientSecret.equals(secret))
-			{
-				return true;
-			}
-		}
-		
-		return false;
+		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
 
 	/*
@@ -290,7 +280,7 @@ public class ControlSolution extends Control
 		 */
 		ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
 		serverAnnounceMsg.setHostname(Settings.getLocalHostname());
-		serverAnnounceMsg.setId(Settings.getSecret());
+		serverAnnounceMsg.setId(id);
 		serverAnnounceMsg.setLoad(numClientConnections);
 		serverAnnounceMsg.setPort(numClientConnections);
 		
@@ -312,9 +302,10 @@ public class ControlSolution extends Control
 	private boolean processLoginMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String secret = receivedJsonObj.get("secret").getAsString();
+		String username = receivedJsonObj.get("username").getAsString();
 
 		// Secret is not correct, login failed
-		if (!clientSecretList.contains(secret))
+		if (!hasClientInfo(username, secret))
 		{
 			LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
 			loginFailedMsg.setInfo("Register failed, secret does not exist!");
@@ -327,8 +318,6 @@ public class ControlSolution extends Control
 			return true;
 		}
 		
-		String username = receivedJsonObj.get("username").getAsString();
-
 		log.info("logged in as user " + username);
 
 		LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
@@ -337,10 +326,10 @@ public class ControlSolution extends Control
 		con.writeMsg(loginSuccJsonStr);
 
 		// Find a server with less client connection
-		ServerInfo server = loadBalance();
+		ServerInfo serverInfo = loadBalance();
 
 		// Connect to this server
-		if (server == null)
+		if (serverInfo == null)
 		{
 			clientConnectionList.add(con);
 			numClientConnections++;
@@ -353,8 +342,8 @@ public class ControlSolution extends Control
 			log.info("Redirected");
 
 			RedirectMsg redirectMsg = new RedirectMsg();
-			redirectMsg.setHost(server.getRemoteHostname());
-			redirectMsg.setPort("" + server.getRemotePort());
+			redirectMsg.setHost(serverInfo.getRemoteHostname());
+			redirectMsg.setPort("" + serverInfo.getRemotePort());
 			String redirectMsgJsonStr = redirectMsg.toJsonString();
 			con.writeMsg(redirectMsgJsonStr);
 
@@ -368,8 +357,8 @@ public class ControlSolution extends Control
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
-		// Check whether secret already exists
-		if (clientSecretList.contains(secret))
+		// Check whether username already exists
+		if (clientInfoList.containsKey(username))
 		{
 			log.info("Register failed. Secret already exists!");
 
@@ -419,7 +408,7 @@ public class ControlSolution extends Control
 			//receivingLockAllowedMsg();
 		}*/
 		
-		clientSecretList.add(secret);
+		clientInfoList.put(username, secret);
 		RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
 		registerSuccMsg.setInfo("register succ for " + username);
 		String registSuccJsonStr = registerSuccMsg.toJsonString();
@@ -462,13 +451,13 @@ public class ControlSolution extends Control
 	{
 		log.info("Server announce received");
 		
-		String secret = receivedJsonObj.get("id").getAsString();
-		ServerInfo serverInfo = findServer(secret);
+		String id = receivedJsonObj.get("id").getAsString();
+		ServerInfo serverInfo = findServer(id);
 		
 		if (serverInfo == null)
 		{
 			serverInfo = new ServerInfo();
-			serverInfo.setId(secret);
+			serverInfo.setId(id);
 			serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
 			serverInfo.setRemoteHostname(receivedJsonObj.get("host").getAsString());
 			serverInfo.setRemotePort(receivedJsonObj.get("port").getAsInt());
@@ -500,6 +489,13 @@ public class ControlSolution extends Control
 			}
 		}
 
+		return false;
+	}
+	
+	private boolean processLockAllowedMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		
+		
 		return false;
 	}
 
