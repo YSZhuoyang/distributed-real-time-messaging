@@ -12,6 +12,7 @@ public class LockInfo
 	public LockInfo(String u, String s)
 	{
 		username = u;
+		secret = s;
 		allowedServerList = new ArrayList<>();
 	}
 
@@ -54,7 +55,7 @@ public class LockInfo
 	{
 		for (ServerInfo serverInfo : serverInfoList)
 		{
-			if (allowedServerList.contains(serverInfo.getId()))
+			if (!allowedServerList.contains(serverInfo.getId()))
 			{
 				return false;
 			}

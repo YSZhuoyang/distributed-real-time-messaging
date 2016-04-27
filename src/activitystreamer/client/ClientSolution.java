@@ -111,14 +111,14 @@ public class ClientSolution extends Thread
 						writer.close();
 						
 						// reconnect
+						log.info("Connect to another server");
+						
 						String newHost = receivedJson.get("host").getAsString();
 						int newPort = receivedJson.get("port").getAsInt();
 						
 						Settings.setRemoteHostname(newHost);
 						Settings.setRemotePort(newPort);
 
-						log.info("Connect to another server");
-						
 						sendLoginMsg();
 						
 						break;
