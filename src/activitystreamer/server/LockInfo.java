@@ -1,14 +1,18 @@
-package activitystreamer.client;
+package activitystreamer.server;
 
-public class ClientInfo
+import java.util.ArrayList;
+
+public class LockInfo
 {
 	private String username;
 	private String secret;
+	private ArrayList<String> allowedServerList;
+	private Connection connection;
 	
-	public ClientInfo(String u, String s)
+	public LockInfo(String u, String s)
 	{
 		username = u;
-		secret = s;
+		allowedServerList = new ArrayList<>();
 	}
 
 	public void setUsername(String u)
@@ -21,6 +25,16 @@ public class ClientInfo
 		secret = s;
 	}
 	
+	public void setConnection(Connection con)
+	{
+		connection = con;
+	}
+	
+	public void addAllowedServer(String id)
+	{
+		allowedServerList.add(id);
+	}
+	
 	public String getUsername()
 	{
 		return username;
@@ -29,5 +43,23 @@ public class ClientInfo
 	public String getSecret()
 	{
 		return secret;
+	}
+	
+	public Connection getConnection()
+	{
+		return connection;
+	}
+	
+	public boolean allAllowedInfoReceived(ArrayList<ServerInfo> serverInfoList)
+	{
+		for (ServerInfo serverInfo : serverInfoList)
+		{
+			if (allowedServerList.contains(serverInfo.getId()))
+			{
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }
