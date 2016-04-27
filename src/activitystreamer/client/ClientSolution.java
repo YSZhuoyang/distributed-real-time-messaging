@@ -50,7 +50,7 @@ public class ClientSolution extends Thread
 		// Test: register only
 		if (Settings.getRemoteHostname() != null)
 		{
-			register();
+			sendRegisterMsg();
 		}
 		
 		// open the gui
@@ -107,14 +107,19 @@ public class ClientSolution extends Thread
 					case JsonMessage.REDIRECT:
 						log.info("Redirect");
 						
+						socket.close();
+						writer.close();
+						
 						// reconnect
 						String newHost = receivedJson.get("host").getAsString();
 						int newPort = receivedJson.get("port").getAsInt();
 						
 						Settings.setRemoteHostname(newHost);
 						Settings.setRemotePort(newPort);
+
+						log.info("Connect to another server");
 						
-						login();
+						sendLoginMsg();
 						
 						break;
 						
@@ -137,7 +142,7 @@ public class ClientSolution extends Thread
 	/*
 	 * additional methods
 	 */
-	private void register()
+	private void sendRegisterMsg()
 	{
 		try
 		{
@@ -157,7 +162,7 @@ public class ClientSolution extends Thread
 		}
 	}
 	
-	private void login()
+	private void sendLoginMsg()
 	{
 		try
 		{
