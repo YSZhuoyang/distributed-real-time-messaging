@@ -27,15 +27,14 @@ public class ControlSolution extends Control
 	 */
 	private static ArrayList<Connection> serverConnectionList = new ArrayList<>();
 	private static ArrayList<Connection> clientConnectionList = new ArrayList<>();
-	
+
 	// All servers except itself
 	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
 	private static HashMap<String, String> clientInfoList = new HashMap<>();
 	private static ArrayList<LockInfo> lockInfoList = new ArrayList<>();
 
 	private static String id;
-	
-	
+
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
 	public static ControlSolution getInstance()
@@ -51,7 +50,7 @@ public class ControlSolution extends Control
 	public ControlSolution()
 	{
 		super();
-		
+
 		id = Settings.nextSecret();
 
 		/*
@@ -74,9 +73,9 @@ public class ControlSolution extends Control
 			// check if we should initiate a connection and do so if necessary
 			initiateConnection();
 		}
-		
-		log.debug("Secret: " + Settings.getSecret());		
-		
+
+		log.debug("Secret: " + Settings.getSecret());
+
 		// start the server's activity loop
 		// it will call doActivity every few seconds
 		start();
@@ -107,16 +106,16 @@ public class ControlSolution extends Control
 		 * do additional things here
 		 */
 		Connection con = super.outgoingConnection(s);
-		
+
 		// Send authentication message
 		AuthMsg authJson = new AuthMsg();
 		authJson.setSecret(Settings.getSecret());
-		
+
 		String authJsonStr = authJson.toJsonString();
 		con.writeMsg(authJsonStr);
-		
+
 		serverConnectionList.add(con);
-		
+
 		return con;
 	}
 
@@ -155,9 +154,6 @@ public class ControlSolution extends Control
 			case JsonMessage.REGISTER:
 				return processRegisterMsg(con, receivedJsonObj);
 				
-			case JsonMessage.REGISTER_FAILED:
-				return processRegisterFailedMsg(con, receivedJsonObj);
-
 			case JsonMessage.AUTHENTICATE:
 				return processAuthMsg(con, receivedJsonObj);
 
@@ -188,16 +184,38 @@ public class ControlSolution extends Control
 			*/
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
-				// send
-				return processClientMsg(con,receivedJsonObj);
+				log.info("Activity message received");
+				
+				// Check username and secret!!
+				String username = receivedJsonObj.get("username").getAsString();
+				String secret = receivedJsonObj.get("secret").getAsString();
+				
+				
+				
+				
+				// Convert it to activity broadcast message
+				JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
+				String content = actJsonObj.get("object").getAsString();
+				
+				ActBroadMsg actBroadMsg = new ActBroadMsg();
+				actBroadMsg.setActor(username);
+				actBroadMsg.setObject(content);
+				
+				String activityJsonStr = actBroadMsg.toJsonString();
+				broadcastFromFirstServerReceived(activityJsonStr, con);
 
+				// send
+				//return processClientMsg(con,receivedJsonObj);
+
+			case JsonMessage.ACTIVITY_BROADCAST:
+				log.info("Activity broadcast message received");
+				
+				broadcastActivityBroadcastMsg(msg, con);
+
+				break;
 
 			case JsonMessage.SERVER_ANNOUNCE:
 				return processServerAnnounceMsg(con, receivedJsonObj);
-
-			case JsonMessage.ACTIVITY_BROADCAST:
-				broadcastToAllServers(receivedJsonObj.toString());
-				break;
 
 			case JsonMessage.LOCK_REQUEST:
 				return processLockRequestMsg(con, receivedJsonObj);
@@ -213,11 +231,8 @@ public class ControlSolution extends Control
 		}
 		
 		return false;
-
 	}
 
-	
-	
 	/*
 	 * Called once every few seconds Return true if server should shut down,
 	 * false otherwise
@@ -228,22 +243,23 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
+		// Broadcast server announce
 		ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
 		serverAnnounceMsg.setHostname(Settings.getLocalHostname());
 		serverAnnounceMsg.setId(id);
 		serverAnnounceMsg.setLoad(clientConnectionList.size());
 		serverAnnounceMsg.setPort(Settings.getLocalPort());
-		
+
 		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
-		
+
 		// Broad server announce to adjacent servers
 		for (Connection con : serverConnectionList)
 		{
 			con.writeMsg(serverAnnounceJsonStr);
 		}
-		
+
 		log.info("Server announcement sent");
-		
+
 		return false;
 	}
 
@@ -265,18 +281,18 @@ public class ControlSolution extends Control
 
 			LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
 			loginFailedMsg.setInfo("Register failed, secret does not exist!");
-			
+
 			String registFailedJsonStr = loginFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
 
 			return true;
 		}
-		
+
 		log.info("logged in as user " + username);
 
 		LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
 		loginSuccMsg.setInfo("Login successful");
-		
+
 		String loginSuccJsonStr = loginSuccMsg.toJsonString();
 		con.writeMsg(loginSuccJsonStr);
 
@@ -298,14 +314,14 @@ public class ControlSolution extends Control
 			RedirectMsg redirectMsg = new RedirectMsg();
 			redirectMsg.setHost(serverInfo.getRemoteHostname());
 			redirectMsg.setPort("" + serverInfo.getRemotePort());
-			
+
 			String redirectMsgJsonStr = redirectMsg.toJsonString();
 			con.writeMsg(redirectMsgJsonStr);
-			
+
 			return true;
 		}
 	}
-	
+
 	private boolean processRegisterMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String secret = receivedJsonObj.get("secret").getAsString();
@@ -314,11 +330,11 @@ public class ControlSolution extends Control
 		// Check whether username already exists
 		if (clientInfoList.containsKey(username))
 		{
-			log.info("Register failed. Secret already exists!");
+			log.info("Register failed. Username already exists!");
 
 			RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
 			registerFailedMsg.setInfo(username + " is already registered in the system");
-			
+
 			String registFailedJsonStr = registerFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
 
@@ -328,30 +344,20 @@ public class ControlSolution extends Control
 		// Create a new server list managing lock info
 		LockInfo lockInfo = new LockInfo(username, secret);
 		lockInfo.setConnection(con);
-		
+
 		lockInfoList.add(lockInfo);
-		
+
 		// Broadcast lock request
 		LockRequestMsg lockRequestMsg = new LockRequestMsg();
 		lockRequestMsg.setUsername(username);
 		lockRequestMsg.setSecret(secret);
-		
+
 		String lockRequestJsonStr = lockRequestMsg.toJsonString();
 		broadcastToAllServers(lockRequestJsonStr);
-		
-		return false;
-	}
-	
-	private boolean processRegisterFailedMsg(Connection con,
-			JsonObject receivedJsonObj) {
-		RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
-		registerFailedMsg.setInfo("The attempt of"+receivedJsonObj.get("username").getAsString()+
-				"registering the system is failed.");
-		con.writeMsg(registerFailedMsg.toJsonString());
+
 		return false;
 	}
 
-	
 	private boolean processAuthMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		if(receivedJsonObj.has("command")&&receivedJsonObj.has("secret")){
@@ -387,16 +393,21 @@ public class ControlSolution extends Control
 			con.writeMsg(invalidMsgJsonStr);
 			
 			return true;
+		
 		}
+		
+
+		
+		
 	}
 
 	private boolean processServerAnnounceMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		log.info("Server announce received");
-		
+
 		String id = receivedJsonObj.get("id").getAsString();
 		ServerInfo serverInfo = findServer(id);
-		
+
 		// This is a new server
 		if (serverInfo == null)
 		{
@@ -421,50 +432,57 @@ public class ControlSolution extends Control
 		serverAnnounceMsg.setHostname(serverInfo.getRemoteHostname());
 		serverAnnounceMsg.setLoad(serverInfo.getServerLoad());
 		serverAnnounceMsg.setPort(serverInfo.getRemotePort());
-		
+
 		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
-		
+
 		log.debug("Connection number: " + serverConnectionList.size());
-		
+
 		// Send to adjacent servers
 		for (Connection connection : serverConnectionList)
 		{
 			if (con.getSocket().getLocalPort() != connection.getSocket().getLocalPort())
 			{
 				connection.writeMsg(serverAnnounceJsonStr);
-				
+
 				log.debug("Forwarded!!!!!!!!!");
 			}
 			else
 			{
-				//log.debug("Same server!!!!!!!!!");
+				// log.debug("Same server!!!!!!!!!");
 			}
 		}
 
 		return false;
 	}
-	
+
 	// Server processing the activity message before broadcasting it.
 	private boolean processClientMsg(Connection con, JsonObject activityObj) {
-		if(activityObj.isJsonObject()){
+		return false;
+		}
+	/*private boolean processClientMsg(Connection con, JsonObject activityObj)
+	{
+
 		String thisUsername = null;
 		String thisSecret = null;
 		thisUsername = activityObj.get("username").toString();
 		thisSecret = activityObj.get("secret").toString();
-		
-		if(activityObj.get("username").equals("anonymous")||
-		   hasClientInfo(thisUsername,thisSecret)){
-			
+
+		if (activityObj.get("username").equals("anonymous") || hasClientInfo(thisUsername, thisSecret))
+		{
+
 			ActBroadMsg actBroadMsg = new ActBroadMsg();
-			/*Activity activity = activity().object(activityObj.get("object").getAsString())
-										.authenticatetd_user(thisUsername)
-										.get();*/
-			//actBroadMsg.setActivity(activity);
-			log.debug("Recieved a new message from the client: " + thisUsername 
-					+"with the content: " + "" + actBroadMsg.toJsonString());
+			/*
+			 * Activity activity =
+			 * activity().object(activityObj.get("object").getAsString())
+			 * .authenticatetd_user(thisUsername) .get();
+			 */
+			// actBroadMsg.setActivity(activity);
+			/*log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
+					+ actBroadMsg.toJsonString());
 			broadcastToAllServers(actBroadMsg.toJsonString());
 		}
-		else{
+		else
+		{
 			AuthFailMsg authFailedMsg = new AuthFailMsg();
 			authFailedMsg.setInfo("the supplied secret is incorrect: " + thisSecret);
 			String authFailedJsonStr = authFailedMsg.toJsonString();
@@ -479,56 +497,56 @@ public class ControlSolution extends Control
 			
 		}
 		return false;
-	}
+	}*/
+		
 
-	
-	
 	private boolean processLockAllowedMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String id = receivedJsonObj.get("server").getAsString();
-		
+
 		boolean registerSucceed = false;
 		LockInfo lockInfoToBeDeleted = null;
-		
+
 		for (LockInfo lockInfo : lockInfoList)
 		{
 			if (username.equals(lockInfo.getUsername()) && secret.equals(lockInfo.getSecret()))
 			{
 				lockInfo.addAllowedServer(id);
-				
+
 				log.info("Lock allowed received");
-				
+
 				if (lockInfo.lockAllowedMsgReceivedFromAllServers(serverInfoList))
 				{
 					log.info("Register_Success");
-					
+
 					// Register success
 					Connection clientConnection = lockInfo.getConnection();
 
 					RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
 					registerSuccMsg.setInfo("register success for " + username);
-					
+
 					String registSuccJsonStr = registerSuccMsg.toJsonString();
 					clientConnection.writeMsg(registSuccJsonStr);
-					
+
 					// Add client info and client connection
 					clientInfoList.put(username, secret);
 					lockInfoList.remove(lockInfo);
-					
+
 					lockInfoToBeDeleted = lockInfo;
 					registerSucceed = true;
-					
+
 					// Find a server with less client connections
 					ServerInfo serverInfo = loadBalance();
 
 					// Connect to this server
 					if (serverInfo == null)
 					{
-						clientConnectionList.add(con);
+						clientConnectionList.add(clientConnection);
 					}
-					// Redirect to another server and close the client connection
+					// Redirect to another server and close the client
+					// connection
 					else
 					{
 						log.info("Redirected");
@@ -537,69 +555,69 @@ public class ControlSolution extends Control
 						redirectMsg.setHost(serverInfo.getRemoteHostname());
 						redirectMsg.setPort("" + serverInfo.getRemotePort());
 						String redirectMsgJsonStr = redirectMsg.toJsonString();
-						
+
 						clientConnection.writeMsg(redirectMsgJsonStr);
 						clientConnection.closeCon();
 					}
-					
+
 					break;
 				}
 			}
 		}
-		
+
 		// Delete lock info after user successfully registered
 		if (registerSucceed)
 		{
 			lockInfoList.remove(lockInfoToBeDeleted);
 		}
-		
+
 		return false;
 	}
-	
+
 	private boolean processLockDeniedMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
-		
+
 		boolean registerDenied = false;
 		LockInfo lockInfoToBeDeleted = null;
-		
+
 		for (LockInfo lockInfo : lockInfoList)
 		{
 			// Server where a user is registering received a lock denied message
-			if (lockInfo.getUsername().equals(username) && 
-					lockInfo.getSecret().equals(secret))
+			if (lockInfo.getUsername().equals(username) && lockInfo.getSecret().equals(secret))
 			{
 				Connection clientConnection = lockInfo.getConnection();
-				
+
 				// Send register failed info
 				RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
 				registerFailedMsg.setInfo("username already exists");
-				
+
 				String registerFailedJsonStr = registerFailedMsg.toJsonString();
 				clientConnection.writeMsg(registerFailedJsonStr);
-				
+
 				clientConnectionList.remove(clientConnection);
 				registerDenied = true;
 				lockInfoToBeDeleted = lockInfo;
-				
+
 				break;
 			}
 		}
-		
+
 		if (registerDenied)
 		{
 			lockInfoList.remove(lockInfoToBeDeleted);
 		}
-		// Server where the user is not registering received a lock denied message
+		// Server where the user is not registering received a lock denied
+		// message
 		else
 		{
 			deleteClientInfo(username, secret);
 		}
-		
+
 		return false;
 	}
-	
+
 	private boolean processLockRequestMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String secret = receivedJsonObj.get("secret").getAsString();
@@ -610,9 +628,9 @@ public class ControlSolution extends Control
 			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
 			lockDeniedMsg.setUsername(username);
 			lockDeniedMsg.setSecret(secret);
-			
+
 			String lockDeniedJsonStr = lockDeniedMsg.toJsonString();
-			
+
 			// Broadcast lock denied message
 			broadcastToAllServers(lockDeniedJsonStr);
 		}
@@ -622,13 +640,13 @@ public class ControlSolution extends Control
 			lockAllowedMsg.setUsername(username);
 			lockAllowedMsg.setSecret(secret);
 			lockAllowedMsg.setServer(id);
-			
+
 			String lockAllowedJsonStr = lockAllowedMsg.toJsonString();
 			con.writeMsg(lockAllowedJsonStr);
 
 			clientInfoList.put(username, secret);
 		}
-		
+
 		return false;
 	}
 
@@ -639,7 +657,7 @@ public class ControlSolution extends Control
 			if (serverInfo.connected())
 			{
 				log.debug("Use an exist connection for broadcasting message: " + jsonStr);
-				
+
 				Connection serverConnection = serverInfo.getConnection();
 				serverConnection.writeMsg(jsonStr);
 			}
@@ -648,11 +666,11 @@ public class ControlSolution extends Control
 				try
 				{
 					log.debug("Create a new connection for broadcasting message: " + jsonStr);
-					
+
 					Socket socket = new Socket(serverInfo.getRemoteHostname(), serverInfo.getRemotePort());
 					Connection serverConnection = new Connection(socket);
 					serverConnection.writeMsg(jsonStr);
-					
+
 					// Target server does not receive the message?
 					serverConnection.closeCon();
 				}
@@ -664,10 +682,61 @@ public class ControlSolution extends Control
 		}
 	}
 
+	private void broadcastFromFirstServerReceived(String jsonStr, Connection con)
+	{
+		log.debug("Broadcast activity message from start server");
+
+		// Traverse all client connections except the one connected
+		for (Connection clientConnection : clientConnectionList)
+		{
+			log.debug("Activity broadcasting from start server to clients");
+
+			log.debug("Client local port: " + clientConnection.getSocket().getLocalPort());
+			log.debug("Commining connection local port: " + con.getSocket().getLocalPort());
+
+			clientConnection.writeMsg(jsonStr);
+		}
+
+		// Traverse all servers connected
+		for (Connection serverConnection : serverConnectionList)
+		{
+			serverConnection.writeMsg(jsonStr);
+		}
+	}
+
+	// Broadcast to all connected clients and adjacent servers
+	private void broadcastActivityBroadcastMsg(String jsonStr, Connection con)
+	{
+		log.debug("Broadcast activity message to other connected server and clients");
+
+		// Traverse all client connections except the one connected
+		for (Connection clientConnection : clientConnectionList)
+		{
+			log.debug("Server received actBroadMsg sending to clients");
+
+			clientConnection.writeMsg(jsonStr);
+		}
+
+		// Traverse all servers connected
+		for (Connection serverConnection : serverConnectionList)
+		{
+			log.debug("Server received actBroadMsg sending to other servers");
+
+			if (serverConnection.getSocket().getLocalPort() != con.getSocket().getLocalPort())
+			{
+				serverConnection.writeMsg(jsonStr);
+			}
+			else
+			{
+				log.debug("Broadcasting to the same server!!!!!!!");
+			}
+		}
+	}
+
 	private void deleteClientInfo(String u, String s)
 	{
 		String secret = clientInfoList.get(u);
-		
+
 		if (secret.equals(s))
 		{
 			clientInfoList.remove(u);
@@ -683,7 +752,7 @@ public class ControlSolution extends Control
 				return serverInfo;
 			}
 		}
-		
+
 		return null;
 	}
 
@@ -704,7 +773,4 @@ public class ControlSolution extends Control
 	{
 		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
-	
-	
-	
 }

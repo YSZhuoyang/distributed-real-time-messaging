@@ -1,24 +1,54 @@
 package Message;
 
+//import com.ibm.common.activitystreams.Activity;
 
-
-public class ActivityMsg extends RedirectMsg
+public class ActivityMsg extends JsonMessage
 {
-	//private Activity activity = null;
+	private Activity activity = new Activity();
 	private String username = "";
 	private String secret = "";
 
-	public ActivityMsg()
+	class Activity
 	{
-		setCommand(JsonMessage.ACTIVITY_MESSAGE);
+		private String type = "say";
+		private String object = "";
+		private String actor = "";
+		
+		
+		public Activity()
+		{
+			setType("say");
+		}
+
+		public void setObject(String obj)
+		{
+			object = obj;
+		}
+		
+		public void setActor(String a)
+		{
+			actor = a;
+		}
+		
+		private void setType(String t)
+		{
+			type = t;
+		}
 	}
 	
-	public void setActivity(String a)
+	public void setActor(String a)
 	{
-		
-		//Activity thisActivity = activity().object(a)
-		//		.get();
-		//activity = thisActivity;
+		activity.setActor(a);
+	}
+	
+	public void setObject(String obj)
+	{
+		activity.setObject(obj);
+	}
+	
+	public void setUserActivity(Activity a)
+	{
+		activity = a;
 	}
 	
 	public void setUsername(String u)
