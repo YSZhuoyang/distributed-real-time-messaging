@@ -4,12 +4,17 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import Message.*;
 import activitystreamer.util.Settings;
 
@@ -247,6 +252,9 @@ public class ControlSolution extends Control
 	 */
 	private boolean processLoginMsg(Connection con, JsonObject receivedJsonObj)
 	{
+		
+	//	if()
+		
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
@@ -346,31 +354,39 @@ public class ControlSolution extends Control
 	
 	private boolean processAuthMsg(Connection con, JsonObject receivedJsonObj)
 	{
-		String secret = receivedJsonObj.get("secret").getAsString();
-		
-		// Connect with server
-		if (!secret.equals(Settings.getSecret()))
-		{
-			log.info("Auth faield");
+		if(receivedJsonObj.has("command")&&receivedJsonObj.has("secret")){
+			String secret = receivedJsonObj.get("secret").getAsString();
 			
-			AuthFailMsg authFailedMsg = new AuthFailMsg();
-			authFailedMsg.setInfo("the supplied secret is incorrect: " + secret);
-			
-			String authFailedJsonStr = authFailedMsg.toJsonString();
-			con.writeMsg(authFailedJsonStr);
+			// Connect with server
+			if (!secret.equals(Settings.getSecret()))
+			{
+				log.info("Auth faield");
+				
+				AuthFailMsg authFailedMsg = new AuthFailMsg();
+				authFailedMsg.setInfo("the supplied secret is incorrect: " + secret);
+				
+				String authFailedJsonStr = authFailedMsg.toJsonString();
+				con.writeMsg(authFailedJsonStr);
+				
+				return true;
+			}
+			else 
+			{
+				log.info("Auth succeeded");
+				
+				serverConnectionList.add(con);
+				
+				return false;
+			}
+		}
+		else{
+			log.info("Invalid message.");
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("The message is missing keys.");
+			String invalidMsgJsonStr = invalidMsg.toJsonString();
+			con.writeMsg(invalidMsgJsonStr);
 			
 			return true;
-		}
-		else 
-			if(receivedJsonObj.has("command")&&receivedJsonObj.has("secret")){
-				
-			}
-		{
-			log.info("Auth succeeded");
-			
-			serverConnectionList.add(con);
-			
-			return false;
 		}
 	}
 
@@ -430,7 +446,7 @@ public class ControlSolution extends Control
 	
 	// Server processing the activity message before broadcasting it.
 	private boolean processClientMsg(Connection con, JsonObject activityObj) {
-		
+		if(activityObj.isJsonObject()){
 		String thisUsername = null;
 		String thisSecret = null;
 		thisUsername = activityObj.get("username").toString();
@@ -453,6 +469,14 @@ public class ControlSolution extends Control
 			authFailedMsg.setInfo("the supplied secret is incorrect: " + thisSecret);
 			String authFailedJsonStr = authFailedMsg.toJsonString();
 			con.writeMsg(authFailedJsonStr);
+		}
+		}
+		else{
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("The message is in a wrong format.");
+			String invalidMsgJsonStr = invalidMsg.toJsonString();
+			con.writeMsg(invalidMsgJsonStr);
+			
 		}
 		return false;
 	}
