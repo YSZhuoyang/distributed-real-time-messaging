@@ -1,46 +1,72 @@
 package activitystreamer.server;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 
 public class ServerInfo
-{	
-	private  final Logger log = LogManager.getLogger();
-	private  String id = null;
-	private  String remoteHostname = null;
-	private  int remotePort = 3780;
-	private  int serverLoad = 0;
+{
+	private String id = null;
+	private String remoteHostname = null;
+	private Connection connection = null;
+	private int remotePort = 3780;
+	private int serverLoad = 0;
+	private boolean connected;
 
 	public String getId()
 	{
 		return id;
 	}
+	
 	public void setId(String id)
 	{
 		this.id = id;
 	}
-	public  String getRemoteHostname()
+	
+	public void setConnected(boolean connected)
+	{
+		this.connected = connected;
+	}
+	
+	public boolean connected()
+	{
+		return connected;
+	}
+	
+	public String getRemoteHostname()
 	{
 		return remoteHostname;
 	}
-	public  void setRemoteHostname(String remoteHostname)
+	
+	public void setRemoteHostname(String remoteHostname)
 	{
 		this.remoteHostname = remoteHostname;
 	}
-	public  int getRemotePort()
+	
+	public Connection getConnection()
+	{
+		return connection;
+	}
+	
+	public void setConnection(Connection con)
+	{
+		connection = con;
+	}
+	
+	public int getRemotePort()
 	{
 		return remotePort;
 	}
-	public  void setRemotePort(int remotePort)
+	
+	public void setRemotePort(int remotePort)
 	{
 		this.remotePort = remotePort;
 	}
-	public  int getServerLoad()
+	
+	public int getServerLoad()
 	{
 		return serverLoad;
 	}
-	public  void setServerLoad(int serverLoad)
+	
+	public void setServerLoad(int serverLoad)
 	{
 		this.serverLoad = serverLoad;
 	}
-	
 }

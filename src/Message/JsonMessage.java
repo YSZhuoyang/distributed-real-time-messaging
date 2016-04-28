@@ -1,11 +1,11 @@
 package Message;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+
 
 public class JsonMessage
 {
-	protected String command = "";
+	private String command = "";
 	
 	public final static String LOGIN = "LOGIN";
 	public final static String LOGIN_SUCCESS = "LOGIN_SUCCESS";
