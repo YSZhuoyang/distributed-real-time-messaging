@@ -1,8 +1,10 @@
 package Message;
 
+import com.ibm.common.activitystreams.Activity;
+
 public class ActivityMsg extends RedirectMsg
 {
-	private String activity = "";
+	private Activity userActivity = null;
 	private String username = "";
 	private String secret = "";
 
@@ -11,9 +13,9 @@ public class ActivityMsg extends RedirectMsg
 		setCommand(JsonMessage.ACTIVITY_MESSAGE);
 	}
 	
-	public void setActivity(String a)
+	public void setUserActivity(Activity a)
 	{
-		activity = a;
+		userActivity = a;
 	}
 	
 	public void setUsername(String u)

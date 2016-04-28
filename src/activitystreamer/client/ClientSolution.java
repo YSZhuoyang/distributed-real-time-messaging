@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.ibm.common.activitystreams.Activity;
 
 import Message.*;
 import activitystreamer.util.Settings;
@@ -64,6 +67,26 @@ public class ClientSolution extends Thread
 	// called by the gui when the user clicks "send"
 	public void sendActivityObject(JSONObject activityObj)
 	{
+		try
+		{
+			if (activityObj.get("command").toString().equals("ACTIVITY_MESSAGE")){
+			ActivityMsg activityMsg = new ActivityMsg();
+			activityMsg.setUsername(activityObj.get("username").toString());
+			activityMsg.setSecret(activityObj.get("secret").toString());
+			activityMsg.setUserActivity((Activity)activityObj.get("activity"));
+			String activityMessage = activityMsg.toJsonString();
+
+			// Try to establish connection
+			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+			writer = new PrintWriter(socket.getOutputStream(), true);
+			writer.println(activityMessage);
+			}
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
 		
 	}
 
