@@ -18,7 +18,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -83,11 +82,7 @@ public class TextFrame extends JFrame implements ActionListener
 	
 	public void displayActivityMessageText(final JsonObject obj)
 	{
-		//Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		//JsonParser jp = new JsonParser();
 		String newText = new Gson().toJson(obj);
-		//JsonElement je = jp.parse(obj.toJSONString());
-		//String newText = gson.toJson(je);
 		String oldText = outputText.getText();
 		
 		outputText.setText(oldText + "\n\n" + newText);
@@ -119,6 +114,7 @@ public class TextFrame extends JFrame implements ActionListener
 		}
 		else if (e.getSource() == disconnectButton)
 		{
+			ClientSolution.getInstance().sendLogoutMsg();
 			ClientSolution.getInstance().disconnect();
 		}
 	}

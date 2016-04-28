@@ -6,7 +6,7 @@ public class AuthFailMsg extends JsonMessage
 
 	public AuthFailMsg()
 	{
-		setCommand(JsonMessage.AUTHTENTICATION_FAIL);
+		setCommand(JsonMessage.AUTHENTICATION_FAIL);
 	}
 	
 	public void setInfo(String i)

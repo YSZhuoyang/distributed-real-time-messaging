@@ -27,9 +27,9 @@ public class Server
 		formatter.printHelp("ActivityStreamer.Server", header, options, footer, true);
 		System.exit(-1);
 	}
+
 	public static void main(String[] args)
 	{
-
 		log.info("reading command line options");
 
 		Options options = new Options();

@@ -10,14 +10,13 @@ import java.net.Socket;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-//import com.ibm.common.activitystreams.Activity;
 
 import Message.*;
 import activitystreamer.util.Settings;
+
 
 public class ClientSolution extends Thread
 {
@@ -33,6 +32,7 @@ public class ClientSolution extends Thread
 	private DataInputStream in;
 	private DataOutputStream out;
 	private BufferedReader inreader;
+	private boolean term;
 	
 	// this is a singleton object
 	public static ClientSolution getInstance()
@@ -83,33 +83,16 @@ public class ClientSolution extends Thread
 		
 		if (command.equals("ACTIVITY_MESSAGE"))
 		{
-			/*String username = Settings.getUsername();
-			String secret = Settings.getSecret();
-			String content = receivedJsonObj.get("activity").getAsJsonObject().get("object").getAsString();
-			
-			Activity activity = new Activity();
-			activity.setObject(content);
-			
-			ActivityMsg activityMsg = new ActivityMsg();
-			activityMsg.setUsername(username);
-			activityMsg.setSecret(secret);
-			activityMsg.setActor(username);
-			activityMsg.setObject(content);
-
-			String activityMessage = activityMsg.toJsonString();*/
-			
 			String activityMessage = new Gson().toJson(receivedJsonObj);
 			writer.println(activityMessage);
 		}
-		
-		
 	}
 
 	// called by the gui when the user clicks disconnect
 	public void disconnect()
 	{
 		textFrame.setVisible(false);
-		
+
 		/*
 		 * other things to do
 		 */
@@ -120,15 +103,13 @@ public class ClientSolution extends Thread
 	@Override
 	public void run()
 	{
-		String receivedMsg;
-
 		log.debug("Client started");
 		
 		try
 		{
-			while (true)
+			while (!term)
 			{
-				receivedMsg = inreader.readLine();
+				String receivedMsg = inreader.readLine();
 				
 				log.debug("Client received: " + receivedMsg);
 				
@@ -146,29 +127,29 @@ public class ClientSolution extends Thread
 					
 					case JsonMessage.REGISTER_FAILED:
 						log.info("Register failed");
-						
-						closeConnection();
+
+						processRegisterFailedMsg(receivedJson);
 						
 						System.exit(0);
 						
 					case JsonMessage.REDIRECT:
-						log.info("Redirect");
+						processRedirectMsg(receivedJson);
+						
+						break;
+					
+					case JsonMessage.AUTHENTICATION_FAIL:
+						log.info("Client failed to send activity message to server.");
 						
 						// Close the current connection
 						closeConnection();
 						
-						// Setup with new host and port number
-						String newHost = receivedJson.get("host").getAsString();
-						int newPort = receivedJson.get("port").getAsInt();
-
-						Settings.setRemoteHostname(newHost);
-						Settings.setRemotePort(newPort);
-
-						// Reconnect to another server
-						log.info("Connect to another server");
+						break;
+					
+					case JsonMessage.INVALID_MESSAGE:
+						log.info("Client failed to send activity message to server.");
 						
-						establishConnection();
-						sendLoginMsg();
+						// Close the current connection
+						closeConnection();
 						
 						break;
 						
@@ -187,13 +168,45 @@ public class ClientSolution extends Thread
 		}
 		catch (IOException e)
 		{
-			System.err.println("Client receiving msg failed: " + e.getMessage());
+			System.err.println("Client failed: " + e.getMessage());
 		}
 	}
 	
 	/*
 	 * additional methods
 	 */
+	private void processRedirectMsg(JsonObject receivedJsonObj)
+	{
+		log.info("Redirect");
+		
+		// Close the current connection
+		closeConnection();
+		
+		// Setup with new host and port number
+		String newHost = receivedJsonObj.get("host").getAsString();
+		int newPort = receivedJsonObj.get("port").getAsInt();
+		
+		Settings.setRemoteHostname(newHost);
+		Settings.setRemotePort(newPort);
+		
+		// Reconnect to another server
+		log.info("Connect to another server");
+		
+		establishConnection();
+		sendLoginMsg();
+	}
+	
+	private void processRegisterFailedMsg(JsonObject receivedJsonObj)
+	{
+		String username = receivedJsonObj.get("username").getAsString();
+		
+		RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
+		registerFailedMsg.setInfo("The attempt of" + username + "registering the system is failed.");
+		writer.println(registerFailedMsg.toJsonString());
+		
+		closeConnection();
+	}
+
 	private void establishConnection()
 	{
 		try
@@ -247,5 +260,16 @@ public class ClientSolution extends Thread
 		String loginMessage = loginMsg.toJsonString();
 
 		writer.println(loginMessage);
+	}
+	
+	public void sendLogoutMsg()
+	{
+		LogoutMsg logoutMsg = new LogoutMsg();
+		logoutMsg.setUsername(Settings.getUsername());
+		logoutMsg.setSecret(Settings.getSecret());
+		
+		writer.println(logoutMsg.toJsonString());
+		
+		term = true;
 	}
 }
