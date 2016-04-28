@@ -23,6 +23,7 @@ import org.json.simple.parser.ParseException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 @SuppressWarnings("serial")
@@ -79,13 +80,28 @@ public class TextFrame extends JFrame implements ActionListener
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setVisible(true);
 	}
-
+	
+	public void displayActivityMessageText(final JsonObject obj)
+	{
+		//Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		//JsonParser jp = new JsonParser();
+		String newText = new Gson().toJson(obj);
+		//JsonElement je = jp.parse(obj.toJSONString());
+		//String newText = gson.toJson(je);
+		String oldText = outputText.getText();
+		
+		outputText.setText(oldText + "\n\n" + newText);
+		outputText.revalidate();
+		outputText.repaint();
+	}
+	
 	public void setOutputText(final JSONObject obj)
 	{
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		JsonParser jp = new JsonParser();
 		JsonElement je = jp.parse(obj.toJSONString());
 		String prettyJsonString = gson.toJson(je);
+		
 		outputText.setText(prettyJsonString);
 		outputText.revalidate();
 		outputText.repaint();
@@ -97,17 +113,9 @@ public class TextFrame extends JFrame implements ActionListener
 		if (e.getSource() == sendButton)
 		{
 			String msg = inputText.getText().trim().replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", "");
-			JSONObject obj;
-			try
-			{
-				obj = (JSONObject) parser.parse(msg);
-				ClientSolution.getInstance().sendActivityObject(obj);
-			}
-			catch (ParseException e1)
-			{
-				log.error("invalid JSON object entered into input text field, data not sent");
-			}
-
+			JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+			
+			ClientSolution.getInstance().sendActivityObject(receivedJsonObj);
 		}
 		else if (e.getSource() == disconnectButton)
 		{

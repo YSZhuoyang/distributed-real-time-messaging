@@ -181,17 +181,37 @@ public class ControlSolution extends Control
 			*/
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
-				// send
+				log.info("Activity message received");
+				
+				// Check username and secret!!
+				String username = receivedJsonObj.get("username").getAsString();
+				String secret = receivedJsonObj.get("secret").getAsString();
+				
+				
+				
+				
+				// Convert it to activity broadcast message
+				JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
+				String content = actJsonObj.get("object").getAsString();
+				
+				ActBroadMsg actBroadMsg = new ActBroadMsg();
+				actBroadMsg.setActor(username);
+				actBroadMsg.setObject(content);
+				
+				String activityJsonStr = actBroadMsg.toJsonString();
+				broadcastFromStartServer(activityJsonStr, con);
+
+				break;
+
+			case JsonMessage.ACTIVITY_BROADCAST:
+				log.info("Activity broadcast message received");
+				
+				broadcastToAllClients(msg, con);
 
 				break;
 
 			case JsonMessage.SERVER_ANNOUNCE:
 				return processServerAnnounceMsg(con, receivedJsonObj);
-
-			case JsonMessage.ACTIVITY_BROADCAST:
-				// broadcast
-
-				break;
 
 			case JsonMessage.LOCK_REQUEST:
 				return processLockRequestMsg(con, receivedJsonObj);
@@ -207,7 +227,6 @@ public class ControlSolution extends Control
 		}
 		
 		return false;
-
 	}
 
 	/*
@@ -589,6 +608,57 @@ public class ControlSolution extends Control
 				{
 					log.debug("Broadcast failed. Info to be sent: " + jsonStr);
 				}
+			}
+		}
+	}
+	
+	private void broadcastFromStartServer(String jsonStr, Connection con)
+	{
+		log.debug("Broadcast activity message from start server");
+		
+		// Traverse all client connections except the one connected
+		for (Connection clientConnection : clientConnectionList)
+		{
+			log.debug("Activity broadcasting from start server to clients");
+			
+			log.debug("Client local port: " + clientConnection.getSocket().getLocalPort());
+			log.debug("Commining connection local port: " + con.getSocket().getLocalPort());
+			
+			clientConnection.writeMsg(jsonStr);
+		}
+		
+		// Traverse all servers connected
+		for (Connection serverConnection : serverConnectionList)
+		{
+			serverConnection.writeMsg(jsonStr);
+		}
+	}
+	
+	// Broadcast to all connected clients and adjacent servers
+	private void broadcastToAllClients(String jsonStr, Connection con)
+	{
+		log.debug("Broadcast activity message to other connected server and clients");
+		
+		// Traverse all client connections except the one connected
+		for (Connection clientConnection : clientConnectionList)
+		{
+			log.debug("Server received actBroadMsg sending to clients");
+			
+			clientConnection.writeMsg(jsonStr);
+		}
+		
+		// Traverse all servers connected
+		for (Connection serverConnection : serverConnectionList)
+		{
+			log.debug("Server received actBroadMsg sending to other servers");
+			
+			if (serverConnection.getSocket().getLocalPort() != con.getSocket().getLocalPort())
+			{
+				serverConnection.writeMsg(jsonStr);
+			}
+			else
+			{
+				log.debug("Broadcasting to the same server!!!!!!!");
 			}
 		}
 	}

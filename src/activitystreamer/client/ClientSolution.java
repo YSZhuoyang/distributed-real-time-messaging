@@ -14,7 +14,7 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.ibm.common.activitystreams.Activity;
+//import com.ibm.common.activitystreams.Activity;
 
 import Message.*;
 import activitystreamer.util.Settings;
@@ -75,26 +75,31 @@ public class ClientSolution extends Thread
 	}
 
 	// called by the gui when the user clicks "send"
-	public void sendActivityObject(JSONObject activityObj)
+	public void sendActivityObject(JsonObject receivedJsonObj)
 	{
-		try
+		log.info("Activity message sent");
+		
+		String command = receivedJsonObj.get("command").getAsString();
+		
+		if (command.equals("ACTIVITY_MESSAGE"))
 		{
-			if (activityObj.get("command").toString().equals("ACTIVITY_MESSAGE")){
+			/*String username = Settings.getUsername();
+			String secret = Settings.getSecret();
+			String content = receivedJsonObj.get("activity").getAsJsonObject().get("object").getAsString();
+			
+			Activity activity = new Activity();
+			activity.setObject(content);
+			
 			ActivityMsg activityMsg = new ActivityMsg();
-			activityMsg.setUsername(activityObj.get("username").toString());
-			activityMsg.setSecret(activityObj.get("secret").toString());
-			activityMsg.setUserActivity((Activity)activityObj.get("activity"));
-			String activityMessage = activityMsg.toJsonString();
+			activityMsg.setUsername(username);
+			activityMsg.setSecret(secret);
+			activityMsg.setActor(username);
+			activityMsg.setObject(content);
 
-			// Try to establish connection
-			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-			writer = new PrintWriter(socket.getOutputStream(), true);
+			String activityMessage = activityMsg.toJsonString();*/
+			
+			String activityMessage = new Gson().toJson(receivedJsonObj);
 			writer.println(activityMessage);
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
 		}
 		
 		
@@ -104,9 +109,11 @@ public class ClientSolution extends Thread
 	public void disconnect()
 	{
 		textFrame.setVisible(false);
+		
 		/*
 		 * other things to do
 		 */
+		closeConnection();
 	}
 
 	// the client's run method, to receive messages
@@ -126,10 +133,17 @@ public class ClientSolution extends Thread
 				log.debug("Client received: " + receivedMsg);
 				
 				JsonObject receivedJson = new Gson().fromJson(receivedMsg, JsonObject.class);
-				String state = receivedJson.get("command").getAsString();
+				String command = receivedJson.get("command").getAsString();
 				
-				switch (state)
+				switch (command)
 				{
+					case JsonMessage.ACTIVITY_BROADCAST:
+						log.info("Activity broadcast received");
+						
+						textFrame.displayActivityMessageText(receivedJson);
+						
+						break;
+					
 					case JsonMessage.REGISTER_FAILED:
 						log.info("Register failed");
 						
