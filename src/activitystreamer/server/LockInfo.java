@@ -51,7 +51,7 @@ public class LockInfo
 		return connection;
 	}
 	
-	public boolean allAllowedInfoReceived(ArrayList<ServerInfo> serverInfoList)
+	public boolean lockAllowedMsgReceivedFromAllServers(ArrayList<ServerInfo> serverInfoList)
 	{
 		for (ServerInfo serverInfo : serverInfoList)
 		{

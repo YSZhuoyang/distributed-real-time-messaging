@@ -29,8 +29,6 @@ public class ControlSolution extends Control
 	private static HashMap<String, String> clientInfoList = new HashMap<>();
 	private static ArrayList<LockInfo> lockInfoList = new ArrayList<>();
 
-	// Assuming that id is secret
-	//private static int numClientConnections = 0;
 	private static String id;
 	
 	
@@ -106,8 +104,10 @@ public class ControlSolution extends Control
 		 */
 		Connection con = super.outgoingConnection(s);
 		
+		// Send authentication message
 		AuthMsg authJson = new AuthMsg();
 		authJson.setSecret(Settings.getSecret());
+		
 		String authJsonStr = authJson.toJsonString();
 		con.writeMsg(authJsonStr);
 		
@@ -138,8 +138,7 @@ public class ControlSolution extends Control
 		/*
 		 * do additional work here return true/false as appropriate
 		 */
-
-		log.debug("Receieved: " + msg);
+		log.debug("Server Receieved: " + msg);
 
 		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
 		String msgType = receivedJsonObj.get("command").getAsString();
@@ -211,85 +210,6 @@ public class ControlSolution extends Control
 
 	}
 
-	private boolean processLockDeniedMsg(Connection con, JsonObject receivedJsonObj)
-	{
-		String username = receivedJsonObj.get("username").getAsString();
-		String secret = receivedJsonObj.get("secret").getAsString();
-		
-		for (LockInfo lockInfo : lockInfoList)
-		{
-			if (lockInfo.getUsername().equals(username) && 
-					lockInfo.getSecret().equals(secret))
-			{
-				Connection clientConnection = lockInfo.getConnection();
-				
-				// Send register failed info
-				RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
-				registerFailedMsg.setInfo("username already exists");
-				
-				String registerFailedJsonStr = registerFailedMsg.toJsonString();
-				clientConnection.writeMsg(registerFailedJsonStr);
-				
-				clientConnectionList.remove(clientConnection);
-				
-				return false;
-			}
-		}
-		
-		deleteClientInfo(username, secret);
-		
-		return false;
-	}
-	
-	private void deleteClientInfo(String u, String s)
-	{
-		String secret = clientInfoList.get(u);
-		
-		if (secret.equals(s))
-		{
-			clientInfoList.remove(u);
-		}
-	}
-
-	private boolean processLockRequestMsg(Connection con, JsonObject receivedJsonObj)
-	{
-		String secret = receivedJsonObj.get("secret").getAsString();
-		String username = receivedJsonObj.get("username").getAsString();
-
-		if (clientInfoList.containsKey(username))
-		{
-			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
-			lockDeniedMsg.setUsername(username);
-			lockDeniedMsg.setSecret(secret);
-			
-			String lockDeniedJsonStr = lockDeniedMsg.toJsonString();
-			
-			// Broadcast lock denied message
-			broadcastToAllServers(lockDeniedJsonStr);
-			
-			//con.writeMsg(lockDeniedJsonStr);
-		}
-		else
-		{
-			LockAllowedMsg lockAllowedMsg = new LockAllowedMsg();
-			lockAllowedMsg.setUsername(username);
-			lockAllowedMsg.setSecret(secret);
-			lockAllowedMsg.setServer(id);
-			
-			String lockAllowedJsonStr = lockAllowedMsg.toJsonString();
-			con.writeMsg(lockAllowedJsonStr);
-
-			clientInfoList.put(username, secret);
-		}
-		
-		return false;
-	}
-
-	private boolean hasClientInfo(String username, String secret)
-	{
-		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
-	}
-
 	/*
 	 * Called once every few seconds Return true if server should shut down,
 	 * false otherwise
@@ -330,12 +250,12 @@ public class ControlSolution extends Control
 		// Secret is not correct, login failed
 		if (!hasClientInfo(username, secret))
 		{
-			LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
-			loginFailedMsg.setInfo("Register failed, secret does not exist!");
-			String registFailedJsonStr = loginFailedMsg.toJsonString();
-
 			log.info("attempt to login with a wrong secret");
 
+			LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
+			loginFailedMsg.setInfo("Register failed, secret does not exist!");
+			
+			String registFailedJsonStr = loginFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
 
 			return true;
@@ -345,6 +265,7 @@ public class ControlSolution extends Control
 
 		LoginSuccMsg loginSuccMsg = new LoginSuccMsg();
 		loginSuccMsg.setInfo("Login successful");
+		
 		String loginSuccJsonStr = loginSuccMsg.toJsonString();
 		con.writeMsg(loginSuccJsonStr);
 
@@ -355,11 +276,10 @@ public class ControlSolution extends Control
 		if (serverInfo == null)
 		{
 			clientConnectionList.add(con);
-			//numClientConnections++;
 
 			return false;
 		}
-		// Connect to another server
+		// Redirect to another server and close the connection
 		else
 		{
 			log.info("Redirected");
@@ -367,10 +287,10 @@ public class ControlSolution extends Control
 			RedirectMsg redirectMsg = new RedirectMsg();
 			redirectMsg.setHost(serverInfo.getRemoteHostname());
 			redirectMsg.setPort("" + serverInfo.getRemotePort());
+			
 			String redirectMsgJsonStr = redirectMsg.toJsonString();
 			con.writeMsg(redirectMsgJsonStr);
-
-			// Wait until writeMsg is done?
+			
 			return true;
 		}
 	}
@@ -387,13 +307,14 @@ public class ControlSolution extends Control
 
 			RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
 			registerFailedMsg.setInfo(username + " is already registered in the system");
+			
 			String registFailedJsonStr = registerFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
 
 			return true;
 		}
 
-		// Create a new Lock list
+		// Create a new server list managing lock info
 		LockInfo lockInfo = new LockInfo(username, secret);
 		lockInfo.setConnection(con);
 		
@@ -405,7 +326,6 @@ public class ControlSolution extends Control
 		lockRequestMsg.setSecret(secret);
 		
 		String lockRequestJsonStr = lockRequestMsg.toJsonString();
-		
 		broadcastToAllServers(lockRequestJsonStr);
 		
 		return false;
@@ -422,6 +342,7 @@ public class ControlSolution extends Control
 			
 			AuthFailMsg authFailedMsg = new AuthFailMsg();
 			authFailedMsg.setInfo("the supplied secret is incorrect: " + secret);
+			
 			String authFailedJsonStr = authFailedMsg.toJsonString();
 			con.writeMsg(authFailedJsonStr);
 			
@@ -498,7 +419,6 @@ public class ControlSolution extends Control
 		String id = receivedJsonObj.get("server").getAsString();
 		
 		boolean registerSucceed = false;
-		
 		LockInfo lockInfoToBeDeleted = null;
 		
 		for (LockInfo lockInfo : lockInfoList)
@@ -509,28 +429,27 @@ public class ControlSolution extends Control
 				
 				log.info("Lock allowed received");
 				
-				if (lockInfo.allAllowedInfoReceived(serverInfoList))
+				if (lockInfo.lockAllowedMsgReceivedFromAllServers(serverInfoList))
 				{
+					log.info("Register_Success");
+					
 					// Register success
-					clientInfoList.put(username, secret);
+					Connection clientConnection = lockInfo.getConnection();
+
 					RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
 					registerSuccMsg.setInfo("register success for " + username);
+					
 					String registSuccJsonStr = registerSuccMsg.toJsonString();
-					
-					Connection clientConnection = lockInfo.getConnection();
-					
 					clientConnection.writeMsg(registSuccJsonStr);
+					
+					// Add client info and client connection
 					clientInfoList.put(username, secret);
 					lockInfoList.remove(lockInfo);
 					
 					lockInfoToBeDeleted = lockInfo;
-					//numClientConnections++;
-
-					log.info("Register_Success");
-					
 					registerSucceed = true;
 					
-					// Find a server with less client connection
+					// Find a server with less client connections
 					ServerInfo serverInfo = loadBalance();
 
 					// Connect to this server
@@ -538,7 +457,7 @@ public class ControlSolution extends Control
 					{
 						clientConnectionList.add(con);
 					}
-					// Connect to another server
+					// Redirect to another server and close the client connection
 					else
 					{
 						log.info("Redirected");
@@ -547,9 +466,8 @@ public class ControlSolution extends Control
 						redirectMsg.setHost(serverInfo.getRemoteHostname());
 						redirectMsg.setPort("" + serverInfo.getRemotePort());
 						String redirectMsgJsonStr = redirectMsg.toJsonString();
+						
 						clientConnection.writeMsg(redirectMsgJsonStr);
-
-						// Wait until writeMsg is done?
 						clientConnection.closeCon();
 					}
 					
@@ -558,18 +476,91 @@ public class ControlSolution extends Control
 			}
 		}
 		
+		// Delete lock info after user successfully registered
 		if (registerSucceed)
 		{
 			lockInfoList.remove(lockInfoToBeDeleted);
+		}
+		
+		return false;
+	}
+	
+	private boolean processLockDeniedMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		String username = receivedJsonObj.get("username").getAsString();
+		String secret = receivedJsonObj.get("secret").getAsString();
+		
+		boolean registerDenied = false;
+		LockInfo lockInfoToBeDeleted = null;
+		
+		for (LockInfo lockInfo : lockInfoList)
+		{
+			// Server where a user is registering received a lock denied message
+			if (lockInfo.getUsername().equals(username) && 
+					lockInfo.getSecret().equals(secret))
+			{
+				Connection clientConnection = lockInfo.getConnection();
+				
+				// Send register failed info
+				RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
+				registerFailedMsg.setInfo("username already exists");
+				
+				String registerFailedJsonStr = registerFailedMsg.toJsonString();
+				clientConnection.writeMsg(registerFailedJsonStr);
+				
+				clientConnectionList.remove(clientConnection);
+				registerDenied = true;
+				lockInfoToBeDeleted = lockInfo;
+				
+				break;
+			}
+		}
+		
+		if (registerDenied)
+		{
+			lockInfoList.remove(lockInfoToBeDeleted);
+		}
+		// Server where the user is not registering received a lock denied message
+		else
+		{
+			deleteClientInfo(username, secret);
+		}
+		
+		return false;
+	}
+	
+	private boolean processLockRequestMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		String secret = receivedJsonObj.get("secret").getAsString();
+		String username = receivedJsonObj.get("username").getAsString();
+
+		if (clientInfoList.containsKey(username))
+		{
+			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
+			lockDeniedMsg.setUsername(username);
+			lockDeniedMsg.setSecret(secret);
 			
-			return false;
+			String lockDeniedJsonStr = lockDeniedMsg.toJsonString();
+			
+			// Broadcast lock denied message
+			broadcastToAllServers(lockDeniedJsonStr);
 		}
 		else
 		{
-			return true;
+			LockAllowedMsg lockAllowedMsg = new LockAllowedMsg();
+			lockAllowedMsg.setUsername(username);
+			lockAllowedMsg.setSecret(secret);
+			lockAllowedMsg.setServer(id);
+			
+			String lockAllowedJsonStr = lockAllowedMsg.toJsonString();
+			con.writeMsg(lockAllowedJsonStr);
+
+			clientInfoList.put(username, secret);
 		}
+		
+		return false;
 	}
-	
+
 	private void broadcastToAllServers(String jsonStr)
 	{
 		for (ServerInfo serverInfo : serverInfoList)
@@ -602,6 +593,16 @@ public class ControlSolution extends Control
 		}
 	}
 
+	private void deleteClientInfo(String u, String s)
+	{
+		String secret = clientInfoList.get(u);
+		
+		if (secret.equals(s))
+		{
+			clientInfoList.remove(u);
+		}
+	}
+
 	private ServerInfo findServer(String id)
 	{
 		for (ServerInfo serverInfo : serverInfoList)
@@ -619,12 +620,17 @@ public class ControlSolution extends Control
 	{
 		for (ServerInfo server : serverInfoList)
 		{
-			if (server.getServerLoad() < clientConnectionList.size() - 1)//numClientConnections - 1
+			if (server.getServerLoad() < clientConnectionList.size() - 1)
 			{
 				return server;
 			}
 		}
 
 		return null;
+	}
+
+	private boolean hasClientInfo(String username, String secret)
+	{
+		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
 }
