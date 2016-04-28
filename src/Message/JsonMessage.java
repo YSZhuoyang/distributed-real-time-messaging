@@ -19,7 +19,7 @@ public class JsonMessage
 	public final static String ACTIVITY_BROADCAST = "ACTIVITY_BROADCAST";
 	public final static String ACTIVITY_MESSAGE = "ACTIVITY_MESSAGE";
 	
-	public final static String AUTHTENTICATION_FAIL = "AUTHTENTICATION_FAIL";
+	public final static String AUTHENTICATION_FAIL = "AUTHTENTICATION_FAIL";
 	public final static String AUTHENTICATE = "AUTHENTICATE";
 	
 	public final static String LOCK_ALLOWED = "LOCK_ALLOWED";

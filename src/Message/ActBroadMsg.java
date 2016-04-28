@@ -1,18 +1,17 @@
 package Message;
 
-import com.ibm.common.activitystreams.Activity;
 
 public class ActBroadMsg extends JsonMessage
 {
 	//private String activity = "";
-	private Activity userActivity = null;
+	//private Activity activity = null;
 	public ActBroadMsg()
 	{
 		setCommand(JsonMessage.ACTIVITY_BROADCAST);
 	}
 
-	public void setUserActivity(Activity a)
+	public void setActivity(String a)
 	{
-		userActivity = a;
+		//activity = a;
 	}
 }

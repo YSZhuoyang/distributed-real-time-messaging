@@ -10,7 +10,5 @@
 	<classpathentry kind="lib" path="lib/json_simple-1.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/gson-2.6.2.jar"/>
-	<classpathentry kind="lib" path="D:/study/DS/team/multiserverbroadcast/lib/guava-16.0.1.jar"/>
-	<classpathentry kind="lib" path="D:/study/DS/team/multiserverbroadcast/lib/joda-time-2.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

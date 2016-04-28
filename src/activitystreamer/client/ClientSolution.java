@@ -14,7 +14,6 @@ import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.ibm.common.activitystreams.Activity;
 
 import Message.*;
 import activitystreamer.util.Settings;
@@ -77,24 +76,15 @@ public class ClientSolution extends Thread
 	// called by the gui when the user clicks "send"
 	public void sendActivityObject(JSONObject activityObj)
 	{
-		try
-		{
-			if (activityObj.get("command").toString().equals("ACTIVITY_MESSAGE")){
-			ActivityMsg activityMsg = new ActivityMsg();
-			activityMsg.setUsername(activityObj.get("username").toString());
-			activityMsg.setSecret(activityObj.get("secret").toString());
-			activityMsg.setUserActivity((Activity)activityObj.get("activity"));
-			String activityMessage = activityMsg.toJsonString();
+		if (activityObj.get("command").toString().equals("ACTIVITY_MESSAGE")){
+		ActivityMsg activityMsg = new ActivityMsg();
+		activityMsg.setUsername(activityObj.get("username").toString());
+		activityMsg.setSecret(activityObj.get("secret").toString());
+		activityMsg.setActivity(activityObj.get("activity").toString());
+		String activityMessage = activityMsg.toJsonString();
 
-			// Try to establish connection
-			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-			writer = new PrintWriter(socket.getOutputStream(), true);
-			writer.println(activityMessage);
-			}
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
+		// Try to establish connection
+		writer.println(activityMessage);
 		}
 		
 		
@@ -104,6 +94,7 @@ public class ClientSolution extends Thread
 	public void disconnect()
 	{
 		textFrame.setVisible(false);
+		closeConnection();
 		/*
 		 * other things to do
 		 */
@@ -139,23 +130,27 @@ public class ClientSolution extends Thread
 						
 					case JsonMessage.REDIRECT:
 						log.info("Redirect");
-						
 						// Close the current connection
 						closeConnection();
-						
 						// Setup with new host and port number
 						String newHost = receivedJson.get("host").getAsString();
 						int newPort = receivedJson.get("port").getAsInt();
-
 						Settings.setRemoteHostname(newHost);
 						Settings.setRemotePort(newPort);
-
 						// Reconnect to another server
 						log.info("Connect to another server");
-						
 						establishConnection();
 						sendLoginMsg();
-						
+						break;
+					case JsonMessage.AUTHENTICATION_FAIL:
+						log.info("Client failed to send activity message to server.");
+						// Close the current connection
+						closeConnection();
+						break;
+					case JsonMessage.INVALID_MESSAGE:
+						log.info("Client failed to send activity message to server.");	
+						// Close the current connection
+						closeConnection();
 						break;
 						
 					case JsonMessage.LOGIN_FAILED:

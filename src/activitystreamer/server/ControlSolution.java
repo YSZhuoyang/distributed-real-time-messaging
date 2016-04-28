@@ -10,7 +10,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 import Message.*;
 import activitystreamer.util.Settings;
 
@@ -147,14 +146,17 @@ public class ControlSolution extends Control
 		{
 			case JsonMessage.LOGIN:
 				return processLoginMsg(con, receivedJsonObj);
-
+				
 			case JsonMessage.REGISTER:
 				return processRegisterMsg(con, receivedJsonObj);
+				
+			case JsonMessage.REGISTER_FAILED:
+				return processRegisterFailedMsg(con, receivedJsonObj);
 
 			case JsonMessage.AUTHENTICATE:
 				return processAuthMsg(con, receivedJsonObj);
 
-			case JsonMessage.AUTHTENTICATION_FAIL:
+			case JsonMessage.AUTHENTICATION_FAIL:
 				log.info("Authentication failed");
 				
 				serverConnectionList.remove(con);
@@ -182,15 +184,14 @@ public class ControlSolution extends Control
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
 				// send
+				return processClientMsg(con,receivedJsonObj);
 
-				break;
 
 			case JsonMessage.SERVER_ANNOUNCE:
 				return processServerAnnounceMsg(con, receivedJsonObj);
 
 			case JsonMessage.ACTIVITY_BROADCAST:
-				// broadcast
-
+				broadcastToAllServers(receivedJsonObj.toString());
 				break;
 
 			case JsonMessage.LOCK_REQUEST:
@@ -210,6 +211,8 @@ public class ControlSolution extends Control
 
 	}
 
+	
+	
 	/*
 	 * Called once every few seconds Return true if server should shut down,
 	 * false otherwise
@@ -331,6 +334,16 @@ public class ControlSolution extends Control
 		return false;
 	}
 	
+	private boolean processRegisterFailedMsg(Connection con,
+			JsonObject receivedJsonObj) {
+		RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
+		registerFailedMsg.setInfo("The attempt of"+receivedJsonObj.get("username").getAsString()+
+				"registering the system is failed.");
+		con.writeMsg(registerFailedMsg.toJsonString());
+		return false;
+	}
+
+	
 	private boolean processAuthMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		String secret = receivedJsonObj.get("secret").getAsString();
@@ -348,7 +361,10 @@ public class ControlSolution extends Control
 			
 			return true;
 		}
-		else
+		else 
+			if(receivedJsonObj.has("command")&&receivedJsonObj.has("secret")){
+				
+			}
 		{
 			log.info("Auth succeeded");
 			
@@ -405,12 +421,43 @@ public class ControlSolution extends Control
 			}
 			else
 			{
-				log.debug("Same server!!!!!!!!!");
+				//log.debug("Same server!!!!!!!!!");
 			}
 		}
 
 		return false;
 	}
+	
+	// Server processing the activity message before broadcasting it.
+	private boolean processClientMsg(Connection con, JsonObject activityObj) {
+		
+		String thisUsername = null;
+		String thisSecret = null;
+		thisUsername = activityObj.get("username").toString();
+		thisSecret = activityObj.get("secret").toString();
+		
+		if(activityObj.get("username").equals("anonymous")||
+		   hasClientInfo(thisUsername,thisSecret)){
+			
+			ActBroadMsg actBroadMsg = new ActBroadMsg();
+			/*Activity activity = activity().object(activityObj.get("object").getAsString())
+										.authenticatetd_user(thisUsername)
+										.get();*/
+			//actBroadMsg.setActivity(activity);
+			log.debug("Recieved a new message from the client: " + thisUsername 
+					+"with the content: " + "" + actBroadMsg.toJsonString());
+			broadcastToAllServers(actBroadMsg.toJsonString());
+		}
+		else{
+			AuthFailMsg authFailedMsg = new AuthFailMsg();
+			authFailedMsg.setInfo("the supplied secret is incorrect: " + thisSecret);
+			String authFailedJsonStr = authFailedMsg.toJsonString();
+			con.writeMsg(authFailedJsonStr);
+		}
+		return false;
+	}
+
+	
 	
 	private boolean processLockAllowedMsg(Connection con, JsonObject receivedJsonObj)
 	{
@@ -633,4 +680,7 @@ public class ControlSolution extends Control
 	{
 		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
+	
+	
+	
 }
