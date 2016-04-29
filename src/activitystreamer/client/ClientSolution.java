@@ -218,13 +218,11 @@ public class ClientSolution extends Thread
 	
 	private void processRegisterFailedMsg(JsonObject receivedJsonObj)
 	{
-		String username = receivedJsonObj.get("username").getAsString();
+		String info = receivedJsonObj.get("info").getAsString();
 		
-		RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
-		registerFailedMsg.setInfo("The attempt of" + username + "registering the system is failed.");
-		writer.println(registerFailedMsg.toJsonString());
+		textFrame.showErrorMsg(info);
 		
-		closeConnection();
+		disconnect();
 	}
 
 	private synchronized void establishConnection()

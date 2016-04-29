@@ -3,7 +3,7 @@ package Message;
 public class RedirectMsg extends JsonMessage
 {
 	private String host = "";
-	private String port = "";
+	private int port = 0;
 
 	public RedirectMsg()
 	{
@@ -15,7 +15,7 @@ public class RedirectMsg extends JsonMessage
 		host = h;
 	}
 	
-	public void setPort(String p)
+	public void setPort(int p)
 	{
 		port = p;
 	}

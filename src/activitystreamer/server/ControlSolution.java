@@ -343,7 +343,7 @@ public class ControlSolution extends Control
 
 			RedirectMsg redirectMsg = new RedirectMsg();
 			redirectMsg.setHost(serverInfo.getRemoteHostname());
-			redirectMsg.setPort("" + serverInfo.getRemotePort());
+			redirectMsg.setPort(serverInfo.getRemotePort());
 
 			String redirectMsgJsonStr = redirectMsg.toJsonString();
 			con.writeMsg(redirectMsgJsonStr);
@@ -526,6 +526,7 @@ public class ControlSolution extends Control
 		// Each lockInfo is bound with a user who is trying to register on this server
 		for (LockInfo lockInfo : lockInfoList)
 		{
+			// This server is the one where this user is trying to register since its lock info was found
 			if (username.equals(lockInfo.getUsername()) && secret.equals(lockInfo.getSecret()))
 			{
 				log.info("Lock allowed received");
@@ -537,7 +538,7 @@ public class ControlSolution extends Control
 				{
 					log.info("Register_Success");
 
-					// Register success
+					// Send register success message
 					Connection clientConnection = lockInfo.getConnection();
 
 					RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
@@ -569,7 +570,7 @@ public class ControlSolution extends Control
 
 						RedirectMsg redirectMsg = new RedirectMsg();
 						redirectMsg.setHost(serverInfo.getRemoteHostname());
-						redirectMsg.setPort("" + serverInfo.getRemotePort());
+						redirectMsg.setPort(serverInfo.getRemotePort());
 						String redirectMsgJsonStr = redirectMsg.toJsonString();
 
 						clientConnection.writeMsg(redirectMsgJsonStr);
@@ -629,8 +630,8 @@ public class ControlSolution extends Control
 		{
 			lockInfoList.remove(lockInfoToBeDeleted);
 		}
-		// Server where the user is not registering received a lock denied
-		// message
+		// The user is trying to register on another server, and this server received 
+		// a lock denied message
 		else
 		{
 			String lockdeniedJsonStr = new Gson().toJson(receivedJsonObj);
@@ -646,6 +647,7 @@ public class ControlSolution extends Control
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
+		// Username already exists
 		if (clientInfoList.containsKey(username))
 		{
 			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
@@ -656,7 +658,6 @@ public class ControlSolution extends Control
 
 			// Broadcast lock denied message
 			broadcastToAllOtherServers(lockDeniedJsonStr);
-			//broadcastToAllServers(lockDeniedJsonStr);
 		}
 		else
 		{
@@ -667,7 +668,6 @@ public class ControlSolution extends Control
 
 			String lockAllowedJsonStr = lockAllowedMsg.toJsonString();
 			broadcastToAllOtherServers(lockAllowedJsonStr);
-			//con.writeMsg(lockAllowedJsonStr);
 
 			clientInfoList.put(username, secret);
 		}
