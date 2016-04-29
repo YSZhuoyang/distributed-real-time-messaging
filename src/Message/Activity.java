@@ -4,7 +4,7 @@ public class Activity
 {
 	private String type = "say";
 	private String object = "";
-	private String actor = "";
+	private String authenticated_user = "";
 	
 	
 	public Activity()
@@ -19,7 +19,7 @@ public class Activity
 	
 	public void setActor(String a)
 	{
-		actor = a;
+		authenticated_user = a;
 	}
 	
 	private void setType(String t)

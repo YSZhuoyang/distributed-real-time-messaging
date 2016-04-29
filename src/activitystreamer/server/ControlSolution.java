@@ -483,11 +483,10 @@ public class ControlSolution extends Control
 
 		String thisUsername = null;
 		String thisSecret = null;
-		thisUsername = activityObj.get("username").toString();
-		thisSecret = activityObj.get("secret").toString();
+		thisUsername = activityObj.get("username").getAsString();
+		thisSecret = activityObj.get("secret").getAsString();
 		
-
-		if (activityObj.get("username").equals("anonymous") || checkClientInfo(thisUsername, thisSecret)){
+		if (activityObj.get("username").equals("anonymous") || hasClientInfo(thisUsername, thisSecret)){
 			ActBroadMsg actBroadMsg = new ActBroadMsg();
 			
 			// Convert it to activity broadcast message
@@ -498,6 +497,12 @@ public class ControlSolution extends Control
 			actBroadMsg.setObject(content);
 			
 			String activityJsonStr = actBroadMsg.toJsonString();
+			
+			log.debug("Broadcast activity message received from client");
+
+			broadcastToAllClients(activityJsonStr);
+			broadcastToAllOtherServers(activityJsonStr);
+			
 			
 			log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
 					+ actBroadMsg.toJsonString());
@@ -758,7 +763,5 @@ public class ControlSolution extends Control
 		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
 	
-	private boolean checkClientInfo(String username, String secret){
-		return clientInfoList.containsKey(username) && clientInfoList.get(username).equals(secret);
-	}
+	
 }
