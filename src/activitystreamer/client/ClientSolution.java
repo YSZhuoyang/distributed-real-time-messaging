@@ -75,7 +75,7 @@ public class ClientSolution extends Thread
 	}
 
 	// called by the gui when the user clicks "send"
-	public void sendActivityObject(JsonObject receivedJsonObj)
+	public synchronized void sendActivityObject(JsonObject receivedJsonObj)
 	{
 		log.info("Activity message sent");
 		
@@ -98,6 +98,61 @@ public class ClientSolution extends Thread
 		 */
 		closeConnection();
 	}
+	
+	private synchronized void process(String receivedJsonStr)
+	{
+		log.debug("Client received: " + receivedJsonStr);
+		
+		JsonObject receivedJson = new Gson().fromJson(receivedJsonStr, JsonObject.class);
+		String command = receivedJson.get("command").getAsString();
+		
+		switch (command)
+		{
+			case JsonMessage.ACTIVITY_BROADCAST:
+				log.info("Activity broadcast received");
+				
+				textFrame.displayActivityMessageText(receivedJson);
+				
+				break;
+			
+			case JsonMessage.REGISTER_FAILED:
+				log.info("Register failed");
+
+				processRegisterFailedMsg(receivedJson);
+				
+				System.exit(0);
+				
+			case JsonMessage.REDIRECT:
+				processRedirectMsg(receivedJson);
+				
+				break;
+			
+			case JsonMessage.AUTHENTICATION_FAIL:
+				log.info("Client failed to send activity message to server.");
+				
+				// Close the current connection
+				disconnect();
+				
+				break;
+			
+			case JsonMessage.LOGIN_FAILED:
+				log.info("Login failed");
+				
+				disconnect();
+				break;
+				//System.exit(0);
+				
+			case JsonMessage.INVALID_MESSAGE:
+				log.info("Client failed to send activity message to server.");
+				
+				processInvalidMsg(receivedJson);
+				
+				break;
+			
+			default:
+				break;
+		}
+	}
 
 	// the client's run method, to receive messages
 	@Override
@@ -111,59 +166,7 @@ public class ClientSolution extends Thread
 			{
 				String receivedMsg = inreader.readLine();
 				
-				log.debug("Client received: " + receivedMsg);
-				
-				JsonObject receivedJson = new Gson().fromJson(receivedMsg, JsonObject.class);
-				String command = receivedJson.get("command").getAsString();
-				
-				switch (command)
-				{
-					case JsonMessage.ACTIVITY_BROADCAST:
-						log.info("Activity broadcast received");
-						
-						textFrame.displayActivityMessageText(receivedJson);
-						
-						break;
-					
-					case JsonMessage.REGISTER_FAILED:
-						log.info("Register failed");
-
-						processRegisterFailedMsg(receivedJson);
-						
-						System.exit(0);
-						
-					case JsonMessage.REDIRECT:
-						processRedirectMsg(receivedJson);
-						
-						break;
-					
-					case JsonMessage.AUTHENTICATION_FAIL:
-						log.info("Client failed to send activity message to server.");
-						
-						// Close the current connection
-						closeConnection();
-						
-						break;
-					
-					case JsonMessage.INVALID_MESSAGE:
-						log.info("Client failed to send activity message to server.");
-						
-						// Close the current connection
-						closeConnection();
-						
-						break;
-						
-					case JsonMessage.LOGIN_FAILED:
-						log.info("Login failed");
-						
-						closeConnection();
-						
-						System.exit(0);
-					
-					default:
-						break;
-				}
-				
+				process(receivedMsg);
 			}
 		}
 		catch (IOException e)
@@ -196,6 +199,13 @@ public class ClientSolution extends Thread
 		sendLoginMsg();
 	}
 	
+	private void processInvalidMsg(JsonObject receivedJsonObj)
+	{
+		String info = receivedJsonObj.get("info").getAsString();
+		
+		textFrame.showErrorMsg(info);
+	}
+	
 	private void processRegisterFailedMsg(JsonObject receivedJsonObj)
 	{
 		String username = receivedJsonObj.get("username").getAsString();
@@ -207,7 +217,7 @@ public class ClientSolution extends Thread
 		closeConnection();
 	}
 
-	private void establishConnection()
+	private synchronized void establishConnection()
 	{
 		try
 		{
@@ -226,7 +236,7 @@ public class ClientSolution extends Thread
 		}
 	}
 	
-	private void closeConnection()
+	private synchronized void closeConnection()
 	{
 		try
 		{

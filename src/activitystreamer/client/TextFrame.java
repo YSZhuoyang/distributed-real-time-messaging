@@ -9,6 +9,7 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -88,6 +89,11 @@ public class TextFrame extends JFrame implements ActionListener
 		outputText.setText(oldText + "\n\n" + newText);
 		outputText.revalidate();
 		outputText.repaint();
+	}
+	
+	public void showErrorMsg(String error)
+	{
+        JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
 	public void setOutputText(final JSONObject obj)
