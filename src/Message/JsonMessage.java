@@ -3,6 +3,11 @@ package Message;
 import com.google.gson.Gson;
 
 
+/*
+ * Standardize format and content of Json message going between
+ * different servers and clients, to minimize raising errors and
+ * validations
+ */
 public class JsonMessage
 {
 	private String command = "";
@@ -29,6 +34,8 @@ public class JsonMessage
 	public final static String REDIRECT = "REDIRECT";
 	public final static String INVALID_MESSAGE = "INVALID_MESSAGE";
 	public final static String SERVER_ANNOUNCE = "SERVER_ANNOUNCE";
+	
+	public final static String UNAUTHENTICATED_SERVER = "This is an unauthenticated server!!";
 	
 	
 	public JsonMessage()

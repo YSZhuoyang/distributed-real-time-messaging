@@ -83,8 +83,18 @@ public class ClientSolution extends Thread
 		
 		if (command.equals("ACTIVITY_MESSAGE"))
 		{
-			String activityMessage = new Gson().toJson(receivedJsonObj);
-			writer.println(activityMessage);
+			String username = receivedJsonObj.get("username").getAsString();
+			String secret = receivedJsonObj.get("secret").getAsString();
+			
+			if (username.equals(Settings.getUsername()) && secret.equals(Settings.getSecret()))
+			{
+				String activityMessage = new Gson().toJson(receivedJsonObj);
+				writer.println(activityMessage);
+			}
+			else
+			{
+				textFrame.showErrorMsg("Client failed to send activity message");
+			}
 		}
 	}
 
