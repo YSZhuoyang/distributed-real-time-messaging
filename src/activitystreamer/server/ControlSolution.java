@@ -25,15 +25,15 @@ public class ControlSolution extends Control
 	/*
 	 * additional variables as needed
 	 */
-	private static ArrayList<Connection> serverConnectionList = new ArrayList<>();
-	private static ArrayList<Connection> clientConnectionList = new ArrayList<>();
+	private ArrayList<Connection> serverConnectionList = new ArrayList<>();
+	private ArrayList<Connection> clientConnectionList = new ArrayList<>();
 
 	// All servers except itself
-	private static ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
-	private static HashMap<String, String> clientInfoList = new HashMap<>();
-	private static ArrayList<LockInfo> lockInfoList = new ArrayList<>();
+	private ArrayList<ServerInfo> serverInfoList = new ArrayList<>();
+	private HashMap<String, String> clientInfoList = new HashMap<>();
+	private ArrayList<LockInfo> lockInfoList = new ArrayList<>();
 
-	private static String id;
+	private String id;
 
 	// since control and its subclasses are singleton, we get the singleton this
 	// way
@@ -184,23 +184,56 @@ public class ControlSolution extends Control
 			*/
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
-				log.info("Activity message received");
+				log.info("Activity message received from port: " + con.getSocket().getPort());
+				
+				if (clientConnectionList.contains(con))
+				{
+					System.out.println("From client");
+				}
 				
 				// Check username and secret!!
 				/*String username = receivedJsonObj.get("username").getAsString();
 				String secret = receivedJsonObj.get("secret").getAsString();
 				
+				if (hasClientInfo(username, secret))
+				{
+					// Convert it to activity broadcast message
+					JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
+					String content = actJsonObj.get("object").getAsString();
+					
+					ActBroadMsg actBroadMsg = new ActBroadMsg();
+					actBroadMsg.setActor(username);
+					actBroadMsg.setObject(content);
+					
+					String activityJsonStr = actBroadMsg.toJsonString();
+					
+					log.debug("Broadcast activity message received from client");
+
+					broadcastToAllClients(activityJsonStr);
+					broadcastToAllOtherServers(activityJsonStr);
+
+					// send
+					//return processClientMsg(con,receivedJsonObj);
+				}
+				else
+				{
+					InvalidMsg invalidMsg = new InvalidMsg();
+					invalidMsg.setInfo("User name or secret incorrect");
+					
+					con.writeMsg(invalidMsg.toJsonString());
+				}
 				
+				break;
 				
+			case JsonMessage.ACTIVITY_BROADCAST:
+				log.info("Activity broadcast message received from port: " + con.getSocket().getPort());
 				
-				// Convert it to activity broadcast message
-				JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
-				String content = actJsonObj.get("object").getAsString();
+				if (serverConnectionList.contains(con))
+				{
+					System.out.println("From server");
+				}
 				
-				ActBroadMsg actBroadMsg = new ActBroadMsg();
-				actBroadMsg.setActor(username);
-				actBroadMsg.setObject(content);
-				
+<<<<<<< HEAD
 				String activityJsonStr = actBroadMsg.toJsonString();
 				broadcastFromFirstServerReceived(activityJsonStr, con);
 */
@@ -209,9 +242,11 @@ public class ControlSolution extends Control
 
 			case JsonMessage.ACTIVITY_BROADCAST:
 				log.info("Activity broadcast message received");
-				
-				broadcastActivityBroadcastMsg(msg, con);
+				log.debug("Broadcast activity message to other connected server and clients");
 
+				broadcastToAllClients(msg);
+				forwardToOtherServers(con, msg);
+				
 				break;
 
 			case JsonMessage.SERVER_ANNOUNCE:
@@ -253,16 +288,13 @@ public class ControlSolution extends Control
 		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 
 		// Broad server announce to adjacent servers
-		for (Connection con : serverConnectionList)
-		{
-			con.writeMsg(serverAnnounceJsonStr);
-		}
+		broadcastToAllOtherServers(serverAnnounceJsonStr);
 
 		log.info("Server announcement sent");
 
 		return false;
 	}
-
+	
 	/*
 	 * Other methods as needed
 	 */
@@ -352,7 +384,7 @@ public class ControlSolution extends Control
 		lockRequestMsg.setSecret(secret);
 
 		String lockRequestJsonStr = lockRequestMsg.toJsonString();
-		broadcastToAllServers(lockRequestJsonStr);
+		broadcastToAllOtherServers(lockRequestJsonStr);
 
 		return false;
 	}
@@ -437,19 +469,7 @@ public class ControlSolution extends Control
 		log.debug("Connection number: " + serverConnectionList.size());
 
 		// Send to adjacent servers
-		for (Connection connection : serverConnectionList)
-		{
-			if (con.getSocket().getLocalPort() != connection.getSocket().getLocalPort())
-			{
-				connection.writeMsg(serverAnnounceJsonStr);
-
-				log.debug("Forwarded!!!!!!!!!");
-			}
-			else
-			{
-				// log.debug("Same server!!!!!!!!!");
-			}
-		}
+		forwardToOtherServers(con, serverAnnounceJsonStr);
 
 		return false;
 	}
@@ -478,11 +498,9 @@ public class ControlSolution extends Control
 			actBroadMsg.setObject(content);
 			
 			String activityJsonStr = actBroadMsg.toJsonString();
-			broadcastFromFirstServerReceived(activityJsonStr, con);
 			
 			log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
 					+ actBroadMsg.toJsonString());
-			broadcastToAllServers(actBroadMsg.toJsonString());
 			return false;
 		}
 		else
@@ -513,15 +531,18 @@ public class ControlSolution extends Control
 		String id = receivedJsonObj.get("server").getAsString();
 
 		boolean registerSucceed = false;
+		boolean registeringOnThisServer = false;
 		LockInfo lockInfoToBeDeleted = null;
 
+		// Each lockInfo is bound with a user who is trying to register on this server
 		for (LockInfo lockInfo : lockInfoList)
 		{
 			if (username.equals(lockInfo.getUsername()) && secret.equals(lockInfo.getSecret()))
 			{
-				lockInfo.addAllowedServer(id);
-
 				log.info("Lock allowed received");
+
+				lockInfo.addAllowedServer(id);
+				registeringOnThisServer = true;
 
 				if (lockInfo.lockAllowedMsgReceivedFromAllServers(serverInfoList))
 				{
@@ -571,8 +592,13 @@ public class ControlSolution extends Control
 			}
 		}
 
+		if (!registeringOnThisServer)
+		{
+			String lockAllowedJsonStr = new Gson().toJson(receivedJsonObj);
+			forwardToOtherServers(con, lockAllowedJsonStr);
+		}
 		// Delete lock info after user successfully registered
-		if (registerSucceed)
+		else if (registerSucceed)
 		{
 			lockInfoList.remove(lockInfoToBeDeleted);
 		}
@@ -618,9 +644,11 @@ public class ControlSolution extends Control
 		// message
 		else
 		{
+			String lockdeniedJsonStr = new Gson().toJson(receivedJsonObj);
+			forwardToOtherServers(con, lockdeniedJsonStr);
 			deleteClientInfo(username, secret);
 		}
-
+		
 		return false;
 	}
 
@@ -638,7 +666,8 @@ public class ControlSolution extends Control
 			String lockDeniedJsonStr = lockDeniedMsg.toJsonString();
 
 			// Broadcast lock denied message
-			broadcastToAllServers(lockDeniedJsonStr);
+			broadcastToAllOtherServers(lockDeniedJsonStr);
+			//broadcastToAllServers(lockDeniedJsonStr);
 		}
 		else
 		{
@@ -648,7 +677,8 @@ public class ControlSolution extends Control
 			lockAllowedMsg.setServer(id);
 
 			String lockAllowedJsonStr = lockAllowedMsg.toJsonString();
-			con.writeMsg(lockAllowedJsonStr);
+			broadcastToAllOtherServers(lockAllowedJsonStr);
+			//con.writeMsg(lockAllowedJsonStr);
 
 			clientInfoList.put(username, secret);
 		}
@@ -656,89 +686,37 @@ public class ControlSolution extends Control
 		return false;
 	}
 
-	private void broadcastToAllServers(String jsonStr)
+	private void broadcastToAllOtherServers(String jsonStr)
 	{
-		for (ServerInfo serverInfo : serverInfoList)
+		for (Connection con : serverConnectionList)
 		{
-			if (serverInfo.connected())
+			con.writeMsg(jsonStr);
+		}
+	}
+	
+	private void forwardToOtherServers(Connection current, String jsonStr)
+	{
+		for (Connection con : serverConnectionList)
+		{
+			if (current.getSocket().getPort() != con.getSocket().getPort())
 			{
-				log.debug("Use an exist connection for broadcasting message: " + jsonStr);
-
-				Connection serverConnection = serverInfo.getConnection();
-				serverConnection.writeMsg(jsonStr);
+				con.writeMsg(jsonStr);
 			}
 			else
 			{
-				try
-				{
-					log.debug("Create a new connection for broadcasting message: " + jsonStr);
-
-					Socket socket = new Socket(serverInfo.getRemoteHostname(), serverInfo.getRemotePort());
-					Connection serverConnection = new Connection(socket);
-					serverConnection.writeMsg(jsonStr);
-
-					// Target server does not receive the message?
-					serverConnection.closeCon();
-				}
-				catch (Exception e)
-				{
-					log.debug("Broadcast failed. Info to be sent: " + jsonStr);
-				}
+				log.debug("Same Server!!!!!!!!");
 			}
 		}
 	}
 
-	private void broadcastFromFirstServerReceived(String jsonStr, Connection con)
+	private void broadcastToAllClients(String jsonStr)
 	{
-		log.debug("Broadcast activity message from start server");
-
-		// Traverse all client connections except the one connected
-		for (Connection clientConnection : clientConnectionList)
+		for (Connection con : clientConnectionList)
 		{
-			log.debug("Activity broadcasting from start server to clients");
-
-			log.debug("Client local port: " + clientConnection.getSocket().getLocalPort());
-			log.debug("Commining connection local port: " + con.getSocket().getLocalPort());
-
-			clientConnection.writeMsg(jsonStr);
-		}
-
-		// Traverse all servers connected
-		for (Connection serverConnection : serverConnectionList)
-		{
-			serverConnection.writeMsg(jsonStr);
+			con.writeMsg(jsonStr);
 		}
 	}
-
-	// Broadcast to all connected clients and adjacent servers
-	private void broadcastActivityBroadcastMsg(String jsonStr, Connection con)
-	{
-		log.debug("Broadcast activity message to other connected server and clients");
-
-		// Traverse all client connections except the one connected
-		for (Connection clientConnection : clientConnectionList)
-		{
-			log.debug("Server received actBroadMsg sending to clients");
-
-			clientConnection.writeMsg(jsonStr);
-		}
-
-		// Traverse all servers connected
-		for (Connection serverConnection : serverConnectionList)
-		{
-			log.debug("Server received actBroadMsg sending to other servers");
-
-			if (serverConnection.getSocket().getLocalPort() != con.getSocket().getLocalPort())
-			{
-				serverConnection.writeMsg(jsonStr);
-			}
-			else
-			{
-				log.debug("Broadcasting to the same server!!!!!!!");
-			}
-		}
-	}
-
+	
 	private void deleteClientInfo(String u, String s)
 	{
 		String secret = clientInfoList.get(u);
