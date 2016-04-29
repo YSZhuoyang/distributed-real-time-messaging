@@ -4,17 +4,12 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import Message.*;
 import activitystreamer.util.Settings;
 
@@ -147,6 +142,12 @@ public class ControlSolution extends Control
 		log.debug("Server Receieved: " + msg);
 
 		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		
+		if (!containCommandField(con, receivedJsonObj))
+		{
+			return true;
+		}
+		
 		String msgType = receivedJsonObj.get("command").getAsString();
 
 		switch (msgType)
@@ -161,89 +162,19 @@ public class ControlSolution extends Control
 				return processAuthMsg(con, receivedJsonObj);
 
 			case JsonMessage.AUTHENTICATION_FAIL:
-				log.info("Authentication failed");
-				
-				serverConnectionList.remove(con);
-
-				return true;
+				return processAuthFailedMsg(con, receivedJsonObj);
 
 			case JsonMessage.LOGOUT:
-				// Remove client from the client connection list
-				clientConnectionList.remove(con);
+				return processLogoutMsg(con, receivedJsonObj);
 
-				log.info("user logout");
-
-				return true;
-
-			case "INVALID_MESSAGE":
+			case JsonMessage.INVALID_MESSAGE:
 				return processInvalidMsg(receivedJsonObj);
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
-				log.info("Activity message received from port: " + con.getSocket().getPort());
-				
-				if (clientConnectionList.contains(con))
-				{
-					System.out.println("From client");
-				}
-				
-				// Check username and secret!!
-				/*String username = receivedJsonObj.get("username").getAsString();
-				String secret = receivedJsonObj.get("secret").getAsString();
-				
-				if (hasClientInfo(username, secret))
-				{
-					// Convert it to activity broadcast message
-					JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
-					String content = actJsonObj.get("object").getAsString();
-					
-					ActBroadMsg actBroadMsg = new ActBroadMsg();
-					actBroadMsg.setActor(username);
-					actBroadMsg.setObject(content);
-					
-					String activityJsonStr = actBroadMsg.toJsonString();
-					
-					log.debug("Broadcast activity message received from client");
-
-					broadcastToAllClients(activityJsonStr);
-					broadcastToAllOtherServers(activityJsonStr);
-
-					// send
-					//return processClientMsg(con,receivedJsonObj);
-				}
-				else
-				{
-					InvalidMsg invalidMsg = new InvalidMsg();
-					invalidMsg.setInfo("User name or secret incorrect");
-					
-					con.writeMsg(invalidMsg.toJsonString());
-				}
-				
-				break;
-				
-			case JsonMessage.ACTIVITY_BROADCAST:
-				log.info("Activity broadcast message received from port: " + con.getSocket().getPort());
-				
-				if (serverConnectionList.contains(con))
-				{
-					System.out.println("From server");
-				}
-				
-<<<<<<< HEAD
-				String activityJsonStr = actBroadMsg.toJsonString();
-				broadcastFromFirstServerReceived(activityJsonStr, con);
-*/
-				// send
-				return processClientMsg(con,receivedJsonObj);
-
-			case JsonMessage.ACTIVITY_BROADCAST:
-				log.info("Activity broadcast message received");
-				log.debug("Broadcast activity message to other connected server and clients");
-
-				broadcastToAllClients(msg);
-				forwardToOtherServers(con, msg);
-				
 				return processActivityMsg(con, receivedJsonObj);
-			
+				
+			case JsonMessage.ACTIVITY_BROADCAST:
+				return processActivityBroadcastMsg(con, receivedJsonObj);
 
 			case JsonMessage.SERVER_ANNOUNCE:
 				return processServerAnnounceMsg(con, receivedJsonObj);
@@ -258,10 +189,8 @@ public class ControlSolution extends Control
 				return processLockAllowedMsg(con, receivedJsonObj);
 
 			default:
-				break;
+				return processInvalidCommand(con, receivedJsonObj);
 		}
-		
-		return false;
 	}
 
 	/*
@@ -294,6 +223,25 @@ public class ControlSolution extends Control
 	/*
 	 * Other methods as needed
 	 */
+	private boolean processLogoutMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		// Remove client from the client connection list
+		clientConnectionList.remove(con);
+
+		log.info("user logout");
+
+		return true;
+	}
+	
+	private boolean processAuthFailedMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		log.info("Authentication failed");
+		
+		serverConnectionList.remove(con);
+
+		return true;
+	}
+	
 	private boolean processInvalidMsg(JsonObject receivedJsonObj)
 	{
 		String errorInfo = receivedJsonObj.get("info").getAsString();
@@ -308,11 +256,18 @@ public class ControlSolution extends Control
 		return false;
 	}
 	
-	private boolean processActivityBroadcastMsg(Connection con, String jsonStr)
+	private boolean processActivityBroadcastMsg(Connection con, JsonObject receivedJsonObj)
 	{
-		log.info("Activity broadcast message received from port: " + con.getSocket().getPort());
-		log.debug("Broadcast activity message to other connected server and clients");
+		log.debug("Activity broadcast message received from port: " + con.getSocket().getPort());
 
+		// Validate activity message
+		if (!isActivityMsgValid(con, receivedJsonObj))
+		{
+			return true;
+		}
+		
+		String jsonStr = new Gson().toJson(receivedJsonObj);
+		
 		broadcastToAllClients(jsonStr);
 		forwardToOtherServers(con, jsonStr);
 		
@@ -323,17 +278,20 @@ public class ControlSolution extends Control
 	{
 		log.info("Activity message received from port: " + con.getSocket().getPort());
 		
-		if (clientConnectionList.contains(con))
+		// Validate activity message
+		if (!isActivityMsgValid(con, receivedJsonObj))
 		{
-			System.out.println("From client");
+			return true;
 		}
 		
 		// Check username and secret!!
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
 		
-		if (hasClientInfo(username, secret))
+		if (hasClientInfo(username, secret) || username.equals(JsonMessage.ANONYMUS_USERNAME))
 		{
+			log.debug("Broadcast activity message received from client");
+
 			// Convert it to activity broadcast message
 			JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
 			String content = actJsonObj.get("object").getAsString();
@@ -344,36 +302,39 @@ public class ControlSolution extends Control
 			
 			String activityJsonStr = actBroadMsg.toJsonString();
 			
-			log.debug("Broadcast activity message received from client");
-
 			broadcastToAllClients(activityJsonStr);
 			broadcastToAllOtherServers(activityJsonStr);
-
-			// send
-			//return processClientMsg(con,receivedJsonObj);
+			
+			return false;
 		}
+		// No need to consider the case where user is not logged in since
+		// GUI will display only after user successfully log in
 		else
 		{
-			log.info("Invalid activity message received, invalid message sent");
+			log.info("Invalid activity message received, auth failed message sent");
 			
-			InvalidMsg invalidMsg = new InvalidMsg();
-			invalidMsg.setInfo("Invalid activity message sent from client");
+			AuthFailMsg authFailMsg = new AuthFailMsg();
+			authFailMsg.setInfo("username and secret do not match");
 			
-			con.writeMsg(invalidMsg.toJsonString());
+			con.writeMsg(authFailMsg.toJsonString());
+			
+			return true;
 		}
-		
-		return false;
 	}
 	
 	private boolean processLoginMsg(Connection con, JsonObject receivedJsonObj)
 	{
-		
+		// Validate login message format
+		if (!isUserInfoMsgValid(con, receivedJsonObj))
+		{
+			return true;
+		}
 		
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
-		// Secret is not correct, login failed
-		if (!hasClientInfo(username, secret))
+		// Secret or username is not correct, login failed
+		if (!hasClientInfo(username, secret) && !username.equals(JsonMessage.ANONYMUS_USERNAME))
 		{
 			log.info("attempt to login with a wrong secret");
 
@@ -422,6 +383,12 @@ public class ControlSolution extends Control
 
 	private boolean processRegisterMsg(Connection con, JsonObject receivedJsonObj)
 	{
+		// Validate register message format
+		if (!isUserInfoMsgValid(con, receivedJsonObj))
+		{
+			return true;
+		}
+		
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
@@ -458,45 +425,42 @@ public class ControlSolution extends Control
 
 	private boolean processAuthMsg(Connection con, JsonObject receivedJsonObj)
 	{
-		if(receivedJsonObj.has("command")&&receivedJsonObj.has("secret")){
-			String secret = receivedJsonObj.get("secret").getAsString();
-			
-			// Connect with server
-			if (!secret.equals(Settings.getSecret()))
-			{
-				log.info("Auth faield");
-				
-				AuthFailMsg authFailedMsg = new AuthFailMsg();
-				authFailedMsg.setInfo("the supplied secret is incorrect: " + secret);
-				
-				String authFailedJsonStr = authFailedMsg.toJsonString();
-				con.writeMsg(authFailedJsonStr);
-				
-				return true;
-			}
-			else 
-			{
-				log.info("Auth succeeded");
-				
-				serverConnectionList.add(con);
-				
-				return false;
-			}
-		}
-		else{
-			log.info("Invalid message.");
-			InvalidMsg invalidMsg = new InvalidMsg();
-			invalidMsg.setInfo("The message is missing keys.");
-			String invalidMsgJsonStr = invalidMsg.toJsonString();
-			con.writeMsg(invalidMsgJsonStr);
-			
-			return true;
-		
-		}
-		
+		if (!receivedJsonObj.has("secret"))
+		{
+			log.info("Auth faield");
 
+			AuthFailMsg authFailedMsg = new AuthFailMsg();
+			authFailedMsg.setInfo("the supplied secret is incorrect");
+
+			String authFailedJsonStr = authFailedMsg.toJsonString();
+			con.writeMsg(authFailedJsonStr);
+
+			return true;
+		}
 		
-		
+		String secret = receivedJsonObj.get("secret").getAsString();
+
+		if (!secret.equals(Settings.getSecret()))
+		{
+			log.info("Auth faield");
+
+			AuthFailMsg authFailedMsg = new AuthFailMsg();
+			authFailedMsg.setInfo("the supplied secret is incorrect: " + secret);
+
+			String authFailedJsonStr = authFailedMsg.toJsonString();
+			con.writeMsg(authFailedJsonStr);
+
+			return true;
+		}
+		// Connect with server
+		else
+		{
+			log.info("Auth succeeded");
+
+			serverConnectionList.add(con);
+
+			return false;
+		}
 	}
 
 	private boolean processServerAnnounceMsg(Connection con, JsonObject receivedJsonObj)
@@ -522,7 +486,7 @@ public class ControlSolution extends Control
 			serverInfo = new ServerInfo();
 			serverInfo.setId(id);
 			serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
-			serverInfo.setRemoteHostname(receivedJsonObj.get("host").getAsString());
+			serverInfo.setRemoteHostname(receivedJsonObj.get("hostname").getAsString());
 			serverInfo.setRemotePort(receivedJsonObj.get("port").getAsInt());
 			serverInfo.setConnected(true);
 			serverInfo.setConnection(con);
@@ -550,61 +514,6 @@ public class ControlSolution extends Control
 
 		return false;
 	}
-
-	// Server processing the activity message before broadcasting it.
-	
-	private boolean processClientMsg(Connection con, JsonObject activityObj)
-	{
-		if(activityObj.has("activity")&&activityObj.has("command")&&
-				activityObj.has("username")&&activityObj.has("secret")){
-
-		String thisUsername = null;
-		String thisSecret = null;
-		thisUsername = activityObj.get("username").getAsString();
-		thisSecret = activityObj.get("secret").getAsString();
-		
-		if (activityObj.get("username").equals("anonymous") || hasClientInfo(thisUsername, thisSecret)){
-			ActBroadMsg actBroadMsg = new ActBroadMsg();
-			
-			// Convert it to activity broadcast message
-			JsonObject actJsonObj = activityObj.get("activity").getAsJsonObject();
-			String content = actJsonObj.get("object").getAsString();
-			
-			actBroadMsg.setActor(thisUsername);
-			actBroadMsg.setObject(content);
-			
-			String activityJsonStr = actBroadMsg.toJsonString();
-			
-			log.debug("Broadcast activity message received from client");
-
-			broadcastToAllClients(activityJsonStr);
-			broadcastToAllOtherServers(activityJsonStr);
-			
-			
-			log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
-					+ actBroadMsg.toJsonString());
-			return false;
-		}
-		else
-		{
-			AuthFailMsg authFailedMsg = new AuthFailMsg();
-			authFailedMsg.setInfo("the supplied secret is incorrect: " + thisSecret);
-			String authFailedJsonStr = authFailedMsg.toJsonString();
-			con.writeMsg(authFailedJsonStr);
-			return true;
-		}
-		}
-		else{
-			InvalidMsg invalidMsg = new InvalidMsg();
-			invalidMsg.setInfo("The message is in a wrong format.");
-			String invalidMsgJsonStr = invalidMsg.toJsonString();
-			con.writeMsg(invalidMsgJsonStr);
-			return true;
-			
-		}
-		
-	}
-		
 
 	private boolean processLockAllowedMsg(Connection con, JsonObject receivedJsonObj)
 	{
@@ -740,7 +649,12 @@ public class ControlSolution extends Control
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
-		// Username already exists
+		// Consider both user names registered and waiting to be registered (which are
+		// people who is trying to register). This prevents more than one users register
+		// on different servers with the same user name at the same time.
+		//if (clientInfoList.containsKey(username) || lockInfoContainsUsername(username))
+		/*-----------------------------------------------------------------------------*/
+		// Only consider user names registered according to the specifications
 		if (clientInfoList.containsKey(username))
 		{
 			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
@@ -799,6 +713,69 @@ public class ControlSolution extends Control
 		}
 	}
 	
+	private boolean containCommandField(Connection con, JsonObject receivedJsonObj)
+	{
+		if (!receivedJsonObj.has("command"))
+		{
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("Message must contain field command");
+			con.writeMsg(invalidMsg.toJsonString());
+			
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private boolean isUserInfoMsgValid(Connection con, JsonObject receivedJsonObj)
+	{
+		InvalidMsg invalidMsg = new InvalidMsg();
+		
+		if (!receivedJsonObj.has("username"))
+		{
+			invalidMsg.setInfo("Message must contain field username");
+			con.writeMsg(invalidMsg.toJsonString());
+			
+			return false;
+		}
+		else if (!receivedJsonObj.has("secret"))
+		{
+			invalidMsg.setInfo("Message must contain field secret");
+			con.writeMsg(invalidMsg.toJsonString());
+			
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+	
+	private boolean isActivityMsgValid(Connection con, JsonObject receivedJsonObj)
+	{
+		if (!receivedJsonObj.has("activity"))
+		{
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("Message must contain field activity");
+			con.writeMsg(invalidMsg.toJsonString());
+			
+			return false;
+		}
+		
+		return true;
+	}
+	
+	private boolean processInvalidCommand(Connection con, JsonObject receivedJsonObj)
+	{
+		String command = receivedJsonObj.get("command").getAsString();
+		
+		InvalidMsg invalidMsg = new InvalidMsg();
+		invalidMsg.setInfo("Invalid command: " + command);
+		con.writeMsg(invalidMsg.toJsonString());
+		
+		return true;
+	}
+	
 	private void deleteClientInfo(String u, String s)
 	{
 		String secret = clientInfoList.get(u);
@@ -826,7 +803,7 @@ public class ControlSolution extends Control
 	{
 		for (ServerInfo server : serverInfoList)
 		{
-			if (server.getServerLoad() < clientConnectionList.size() - 1)
+			if (server.getServerLoad() < clientConnectionList.size())
 			{
 				return server;
 			}
@@ -834,11 +811,22 @@ public class ControlSolution extends Control
 
 		return null;
 	}
+	
+	private boolean lockInfoContainsUsername(String username)
+	{
+		for (LockInfo lockInfo : lockInfoList)
+		{
+			if (lockInfo.getUsername().equals(username))
+			{
+				return true;
+			}
+		}
+		
+		return false;
+	}
 
 	private boolean hasClientInfo(String username, String secret)
 	{
 		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
 	}
-	
-	
 }

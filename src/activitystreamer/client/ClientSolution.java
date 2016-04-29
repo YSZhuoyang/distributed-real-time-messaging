@@ -59,6 +59,8 @@ public class ClientSolution extends Thread
 			
 			// Testing
 			sendRegisterMsg();
+			//sendLoginMsg();
+			//sendAnonymusLoginMsg();
 			
 			// open the gui
 			log.debug("opening the gui");
@@ -75,29 +77,21 @@ public class ClientSolution extends Thread
 	}
 
 	// called by the gui when the user clicks "send"
-	public synchronized void sendActivityObject(JsonObject receivedJsonObj)
+	public void sendActivityObject(JsonObject receivedJsonObj)
 	{
-		log.info("Activity message sent");
+		String activityContent = new Gson().toJson(receivedJsonObj);
 		
-		String command = receivedJsonObj.get("command").getAsString();
+		log.info("Activity message sent: " + activityContent);
 		
-		if (command.equals("ACTIVITY_MESSAGE"))
-		{
-			String username = receivedJsonObj.get("username").getAsString();
-			String secret = receivedJsonObj.get("secret").getAsString();
-			
-			if (username.equals(Settings.getUsername()) && secret.equals(Settings.getSecret()))
-			{
-				String activityMessage = new Gson().toJson(receivedJsonObj);
-				writer.println(activityMessage);
-			}
-			else
-			{
-				textFrame.showErrorMsg("Client failed to send activity message");
-			}
-		}
+		ActivityMsg activityMsg = new ActivityMsg();
+		activityMsg.setUsername(Settings.getUsername());
+		activityMsg.setSecret(Settings.getSecret());
+		activityMsg.setObject(activityContent);
+		
+		String activityMessage = activityMsg.toJsonString();
+		writer.println(activityMessage);
 	}
-
+	
 	// called by the gui when the user clicks disconnect
 	public void disconnect()
 	{
@@ -125,6 +119,11 @@ public class ClientSolution extends Thread
 				
 				break;
 			
+			case JsonMessage.REGISTER_SUCCESS:
+				log.info("Register success received");
+				
+				break;
+				
 			case JsonMessage.REGISTER_FAILED:
 				log.info("Register failed");
 
@@ -144,7 +143,12 @@ public class ClientSolution extends Thread
 				disconnect();
 				
 				break;
-			
+
+			case JsonMessage.LOGIN_SUCCESS:
+				log.info("Login success received");
+				
+				break;
+				
 			case JsonMessage.LOGIN_FAILED:
 				log.info("Login failed");
 				
@@ -160,6 +164,8 @@ public class ClientSolution extends Thread
 				break;
 			
 			default:
+				processUnknownMsg(receivedJson);
+				
 				break;
 		}
 	}
@@ -188,6 +194,13 @@ public class ClientSolution extends Thread
 	/*
 	 * additional methods
 	 */
+	private void processUnknownMsg(JsonObject receivedJsonObj)
+	{
+		log.info("Unknown message received");
+		
+		disconnect();
+	}
+	
 	private void processRedirectMsg(JsonObject receivedJsonObj)
 	{
 		log.info("Redirect");
@@ -196,7 +209,7 @@ public class ClientSolution extends Thread
 		closeConnection();
 		
 		// Setup with new host and port number
-		String newHost = receivedJsonObj.get("host").getAsString();
+		String newHost = receivedJsonObj.get("hostname").getAsString();
 		int newPort = receivedJsonObj.get("port").getAsInt();
 		
 		Settings.setRemoteHostname(newHost);
@@ -268,6 +281,17 @@ public class ClientSolution extends Thread
 		String registerMessage = registerMsg.toJsonString();
 
 		writer.println(registerMessage);
+	}
+	
+	private void sendAnonymusLoginMsg()
+	{
+		AnonymusLoginMsg anonymusLoginMsg = new AnonymusLoginMsg();
+		String anonymusLoginMessage = anonymusLoginMsg.toJsonString();
+		
+		Settings.setUsername(JsonMessage.ANONYMUS_USERNAME);
+		Settings.setSecret("");
+
+		writer.println(anonymusLoginMessage);
 	}
 	
 	private void sendLoginMsg()

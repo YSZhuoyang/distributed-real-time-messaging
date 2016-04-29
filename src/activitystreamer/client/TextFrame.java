@@ -114,6 +114,14 @@ public class TextFrame extends JFrame implements ActionListener
 		if (e.getSource() == sendButton)
 		{
 			String msg = inputText.getText().trim().replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", "");
+			
+			if (inputText.getText().isEmpty())
+			{
+				showErrorMsg("Message cannot be empty");
+				
+				return;
+			}
+			
 			JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
 			
 			ClientSolution.getInstance().sendActivityObject(receivedJsonObj);

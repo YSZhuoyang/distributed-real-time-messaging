@@ -3,7 +3,7 @@ package Message;
 public class ServerAnnounceMsg extends JsonMessage
 {
 	private String id = "";
-	private String host = "";
+	private String hostname = "";
 	private int load = 0;
 	private int port = 0;
 
@@ -19,7 +19,7 @@ public class ServerAnnounceMsg extends JsonMessage
 	
 	public void setHostname(String host)
 	{
-		this.host = host;
+		this.hostname = host;
 	}
 	
 	public void setPort(int port)

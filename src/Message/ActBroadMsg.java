@@ -7,14 +7,13 @@ public class ActBroadMsg extends JsonMessage
 	
 	class Activity
 	{
-		private String type = "say";
 		private String object = "";
-		private String actor = "";
+		private String authenticated_user = "";
 		
 		
 		public Activity()
 		{
-			setType("say");
+			
 		}
 
 		public void setObject(String obj)
@@ -22,14 +21,9 @@ public class ActBroadMsg extends JsonMessage
 			object = obj;
 		}
 		
-		public void setActor(String a)
+		private void setActor(String a)
 		{
-			actor = a;
-		}
-		
-		private void setType(String t)
-		{
-			type = t;
+			authenticated_user = a;
 		}
 	}
 	

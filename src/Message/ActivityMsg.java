@@ -1,6 +1,5 @@
 package Message;
 
-//import com.ibm.common.activitystreams.Activity;
 
 public class ActivityMsg extends JsonMessage
 {
@@ -10,14 +9,13 @@ public class ActivityMsg extends JsonMessage
 
 	class Activity
 	{
-		private String type = "say";
 		private String object = "";
-		private String actor = "";
+		private String authenticated_user = "";
 		
 		
 		public Activity()
 		{
-			setType("say");
+			
 		}
 
 		public void setObject(String obj)
@@ -27,28 +25,13 @@ public class ActivityMsg extends JsonMessage
 		
 		public void setActor(String a)
 		{
-			actor = a;
+			authenticated_user = a;
 		}
-		
-		private void setType(String t)
-		{
-			type = t;
-		}
-	}
-	
-	public void setActor(String a)
-	{
-		activity.setActor(a);
 	}
 	
 	public void setObject(String obj)
 	{
 		activity.setObject(obj);
-	}
-	
-	public void setUserActivity(Activity a)
-	{
-		activity = a;
 	}
 	
 	public void setUsername(String u)
