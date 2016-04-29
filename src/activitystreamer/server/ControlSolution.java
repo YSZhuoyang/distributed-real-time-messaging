@@ -115,6 +115,9 @@ public class ControlSolution extends Control
 		con.writeMsg(authJsonStr);
 
 		serverConnectionList.add(con);
+		
+		// Broadcast server announce immediately
+		doActivity();
 
 		return con;
 	}
@@ -172,16 +175,8 @@ public class ControlSolution extends Control
 
 				return true;
 
-			/*case "INVALID_MESSAGE":
-				if (receivedJsonObj.get("command").getAsString() == "invalid_message")
-					;
-				InvalidMsg invalidMsg = new InvalidMsg();
-				invalidMsg.setInfo("Invalid_Message");
-				String invalidMessage = invalidMsg.toJsonString();
-				con.writeMsg(invalidMessage);
-
-				break;
-			*/
+			case "INVALID_MESSAGE":
+				return processInvalidMsg(receivedJsonObj);
 				
 			case JsonMessage.ACTIVITY_MESSAGE:
 				log.info("Activity message received from port: " + con.getSocket().getPort());
@@ -247,7 +242,8 @@ public class ControlSolution extends Control
 				broadcastToAllClients(msg);
 				forwardToOtherServers(con, msg);
 				
-				break;
+				return processActivityMsg(con, receivedJsonObj);
+			
 
 			case JsonMessage.SERVER_ANNOUNCE:
 				return processServerAnnounceMsg(con, receivedJsonObj);
@@ -298,6 +294,77 @@ public class ControlSolution extends Control
 	/*
 	 * Other methods as needed
 	 */
+	private boolean processInvalidMsg(JsonObject receivedJsonObj)
+	{
+		String errorInfo = receivedJsonObj.get("info").getAsString();
+
+		log.info(errorInfo);
+		
+		if (errorInfo.equals(JsonMessage.UNAUTHENTICATED_SERVER))
+		{
+			return true;
+		}
+		
+		return false;
+	}
+	
+	private boolean processActivityBroadcastMsg(Connection con, String jsonStr)
+	{
+		log.info("Activity broadcast message received from port: " + con.getSocket().getPort());
+		log.debug("Broadcast activity message to other connected server and clients");
+
+		broadcastToAllClients(jsonStr);
+		forwardToOtherServers(con, jsonStr);
+		
+		return false;
+	}
+	
+	private boolean processActivityMsg(Connection con, JsonObject receivedJsonObj)
+	{
+		log.info("Activity message received from port: " + con.getSocket().getPort());
+		
+		if (clientConnectionList.contains(con))
+		{
+			System.out.println("From client");
+		}
+		
+		// Check username and secret!!
+		String username = receivedJsonObj.get("username").getAsString();
+		String secret = receivedJsonObj.get("secret").getAsString();
+		
+		if (hasClientInfo(username, secret))
+		{
+			// Convert it to activity broadcast message
+			JsonObject actJsonObj = receivedJsonObj.get("activity").getAsJsonObject();
+			String content = actJsonObj.get("object").getAsString();
+			
+			ActBroadMsg actBroadMsg = new ActBroadMsg();
+			actBroadMsg.setActor(username);
+			actBroadMsg.setObject(content);
+			
+			String activityJsonStr = actBroadMsg.toJsonString();
+			
+			log.debug("Broadcast activity message received from client");
+
+			broadcastToAllClients(activityJsonStr);
+			broadcastToAllOtherServers(activityJsonStr);
+
+			// send
+			//return processClientMsg(con,receivedJsonObj);
+		}
+		else
+		{
+			log.info("Invalid activity message received, invalid message sent");
+			
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("Invalid activity message sent from client");
+			
+			con.writeMsg(invalidMsg.toJsonString());
+		}
+		
+		return false;
+	}
+	
 	private boolean processLoginMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		
@@ -435,6 +502,16 @@ public class ControlSolution extends Control
 	private boolean processServerAnnounceMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		log.info("Server announce received");
+		
+		if (!serverConnectionList.contains(con))
+		{
+			// Send invalid message
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo(JsonMessage.UNAUTHENTICATED_SERVER);
+			con.writeMsg(invalidMsg.toJsonString());
+			
+			return true;
+		}
 
 		String id = receivedJsonObj.get("id").getAsString();
 		ServerInfo serverInfo = findServer(id);
