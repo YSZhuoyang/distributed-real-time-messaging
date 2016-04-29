@@ -9,7 +9,7 @@ public class Activity
 	
 	public Activity()
 	{
-		setType("say");
+		setType("says");
 	}
 
 	public void setObject(String obj)

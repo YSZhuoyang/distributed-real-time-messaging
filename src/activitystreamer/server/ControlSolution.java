@@ -187,7 +187,7 @@ public class ControlSolution extends Control
 				log.info("Activity message received");
 				
 				// Check username and secret!!
-				String username = receivedJsonObj.get("username").getAsString();
+				/*String username = receivedJsonObj.get("username").getAsString();
 				String secret = receivedJsonObj.get("secret").getAsString();
 				
 				
@@ -203,9 +203,9 @@ public class ControlSolution extends Control
 				
 				String activityJsonStr = actBroadMsg.toJsonString();
 				broadcastFromFirstServerReceived(activityJsonStr, con);
-
+*/
 				// send
-				//return processClientMsg(con,receivedJsonObj);
+				return processClientMsg(con,receivedJsonObj);
 
 			case JsonMessage.ACTIVITY_BROADCAST:
 				log.info("Activity broadcast message received");
@@ -269,7 +269,6 @@ public class ControlSolution extends Control
 	private boolean processLoginMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		
-	//	if()
 		
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
@@ -456,30 +455,35 @@ public class ControlSolution extends Control
 	}
 
 	// Server processing the activity message before broadcasting it.
-	private boolean processClientMsg(Connection con, JsonObject activityObj) {
-		return false;
-		}
-	/*private boolean processClientMsg(Connection con, JsonObject activityObj)
+	
+	private boolean processClientMsg(Connection con, JsonObject activityObj)
 	{
+		if(activityObj.has("activity")&&activityObj.has("command")&&
+				activityObj.has("username")&&activityObj.has("secret")){
 
 		String thisUsername = null;
 		String thisSecret = null;
 		thisUsername = activityObj.get("username").toString();
 		thisSecret = activityObj.get("secret").toString();
+		
 
-		if (activityObj.get("username").equals("anonymous") || hasClientInfo(thisUsername, thisSecret))
-		{
-
+		if (activityObj.get("username").equals("anonymous") || checkClientInfo(thisUsername, thisSecret)){
 			ActBroadMsg actBroadMsg = new ActBroadMsg();
-			/*
-			 * Activity activity =
-			 * activity().object(activityObj.get("object").getAsString())
-			 * .authenticatetd_user(thisUsername) .get();
-			 */
-			// actBroadMsg.setActivity(activity);
-			/*log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
+			
+			// Convert it to activity broadcast message
+			JsonObject actJsonObj = activityObj.get("activity").getAsJsonObject();
+			String content = actJsonObj.get("object").getAsString();
+			
+			actBroadMsg.setActor(thisUsername);
+			actBroadMsg.setObject(content);
+			
+			String activityJsonStr = actBroadMsg.toJsonString();
+			broadcastFromFirstServerReceived(activityJsonStr, con);
+			
+			log.debug("Recieved a new message from the client: " + thisUsername + "with the content: " + ""
 					+ actBroadMsg.toJsonString());
 			broadcastToAllServers(actBroadMsg.toJsonString());
+			return false;
 		}
 		else
 		{
@@ -487,6 +491,7 @@ public class ControlSolution extends Control
 			authFailedMsg.setInfo("the supplied secret is incorrect: " + thisSecret);
 			String authFailedJsonStr = authFailedMsg.toJsonString();
 			con.writeMsg(authFailedJsonStr);
+			return true;
 		}
 		}
 		else{
@@ -494,10 +499,11 @@ public class ControlSolution extends Control
 			invalidMsg.setInfo("The message is in a wrong format.");
 			String invalidMsgJsonStr = invalidMsg.toJsonString();
 			con.writeMsg(invalidMsgJsonStr);
+			return true;
 			
 		}
-		return false;
-	}*/
+		
+	}
 		
 
 	private boolean processLockAllowedMsg(Connection con, JsonObject receivedJsonObj)
@@ -772,5 +778,9 @@ public class ControlSolution extends Control
 	private boolean hasClientInfo(String username, String secret)
 	{
 		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
+	}
+	
+	private boolean checkClientInfo(String username, String secret){
+		return clientInfoList.containsKey(username) && clientInfoList.get(username).equals(secret);
 	}
 }
