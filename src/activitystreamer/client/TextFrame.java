@@ -114,6 +114,7 @@ public class TextFrame extends JFrame implements ActionListener
 		anonymousButton.addActionListener(this);
 		frame.setVisible(true);
 	}
+	
 	public void TextFrame()
 	{
 		setTitle("ActivityStreamer Text I/O");
@@ -175,6 +176,7 @@ public class TextFrame extends JFrame implements ActionListener
 	{
         JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.INFORMATION_MESSAGE);
 	}
+	
 	public void infoBox(String infoMessage, String titleBar)
     {
         JOptionPane.showMessageDialog(null, infoMessage, "InfoBox: " + titleBar, JOptionPane.INFORMATION_MESSAGE);
@@ -204,7 +206,6 @@ public class TextFrame extends JFrame implements ActionListener
 		{
 			ClientSolution.getInstance().sendLogoutMsg();
 			ClientSolution.getInstance().disconnect();
-			
 		}
 		else if (e.getSource() == loginButton)
 		{
@@ -214,7 +215,6 @@ public class TextFrame extends JFrame implements ActionListener
 			Settings.setRemoteHostname(hostnameText.getText());
 			ClientSolution.getInstance().establishConnection();
 			ClientSolution.getInstance().sendLoginMsg();
-			
 		}
 		else if (e.getSource() == registerButton)
 		{
@@ -225,7 +225,6 @@ public class TextFrame extends JFrame implements ActionListener
 			log.info(Integer.parseInt(hostportText.getText()));
 			ClientSolution.getInstance().establishConnection();
 			ClientSolution.getInstance().sendRegisterMsg();
-
 		}
 		else if (e.getSource() == anonymousButton)
 		{

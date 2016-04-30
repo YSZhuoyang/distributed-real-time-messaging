@@ -50,22 +50,18 @@ public class ClientSolution extends Thread
 		/*
 		 * some additional initialization
 		 */
-		closed=true;
-		// Test: register only
-	
+		closed = true;
 		
 		// Testing
 		//sendRegisterMsg();
 			
 		// open the gui
 		log.debug("opening the gui");
+		
 		textFrame = new TextFrame();
 			
 		// start the client's thread
-		
-		
-		
-	
+		start();
 	}
 
 	// called by the gui when the user clicks "send"
@@ -86,7 +82,8 @@ public class ClientSolution extends Thread
 	public void disconnect()
 	{
 		textFrame.setVisible(false);
-		textFrame.dispose();
+		//textFrame.dispose();
+		
 		/*
 		 * other things to do
 		 */
@@ -120,14 +117,16 @@ public class ClientSolution extends Thread
 				
 				case JsonMessage.REGISTER_SUCCESS:
 					log.info("Register success received");
-					//closeConnection();
+					
+					closeConnection();
 					textFrame.infoBox("Register success received","message");
 					return false;
 					
 				case JsonMessage.REGISTER_FAILED:
 					log.info("Register failed");
+					
 					textFrame.infoBox("Register failed received","message");
-					//disconnect();
+					disconnect();
 					
 					return processRegisterFailedMsg(receivedJson);
 					
@@ -138,14 +137,17 @@ public class ClientSolution extends Thread
 				
 				case JsonMessage.AUTHENTICATION_FAIL:
 					log.info("Client failed to send activity message to server.");
+					
 					textFrame.infoBox("Authentication failed","message");
 					
 					// Close the current connection
 					disconnect();
+					
 					return true;
 
 				case JsonMessage.LOGIN_SUCCESS:
 					log.info("Login success received");
+					
 					textFrame.infoBox("Login success received","message");
 					textFrame.setVisible(false);
 					textFrame.TextFrame();
@@ -267,25 +269,22 @@ public class ClientSolution extends Thread
 	}
 	
 	public synchronized void establishConnection()
-	{	
-		while(closed){
-			try
-			{
-				socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-				
-				in = new DataInputStream(socket.getInputStream());
-				inreader = new BufferedReader(new InputStreamReader(in));
-				
-				out = new DataOutputStream(socket.getOutputStream());
-				writer = new PrintWriter(out, true);
-				
-				closed = false;	
-			}
-			catch (IOException e)
-			{
-				log.debug("Client establish connection failed: " + e.getMessage());
-			}
-			start();
+	{
+		try
+		{
+			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+			
+			in = new DataInputStream(socket.getInputStream());
+			inreader = new BufferedReader(new InputStreamReader(in));
+			
+			out = new DataOutputStream(socket.getOutputStream());
+			writer = new PrintWriter(out, true);
+			
+			closed = false;	
+		}
+		catch (IOException e)
+		{
+			log.debug("Client establish connection failed: " + e.getMessage());
 		}
 	}
 	
