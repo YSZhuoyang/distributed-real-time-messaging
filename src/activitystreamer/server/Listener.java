@@ -28,7 +28,7 @@ public class Listener extends Thread{
 			Socket clientSocket;
 			try {
 				clientSocket = serverSocket.accept();
-				Control.getInstance().incomingConnection(clientSocket);
+				ControlSolution.getInstance().incomingConnection(clientSocket);
 			} catch (IOException e) {
 				log.info("received exception, shutting down");
 				term=true;
@@ -38,7 +38,13 @@ public class Listener extends Thread{
 
 	public void setTerm(boolean term) {
 		this.term = term;
-		if(term) interrupt();
+		if(term){
+			try{
+				serverSocket.close();
+			}catch (IOException io){
+				log.error("Server socket closed error");
+			}
+		}
 	}
 	
 	

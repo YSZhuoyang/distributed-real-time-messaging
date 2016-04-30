@@ -14,8 +14,11 @@ import activitystreamer.util.Settings;
 
 public class Client
 {
-
 	private static final Logger log = LogManager.getLogger();
+	
+	private static String username = null;
+	private static String userSecret = null;
+	
 
 	private static void help(Options options)
 	{
@@ -86,7 +89,5 @@ public class Client
 		 */
 
 		ClientSolution c = ClientSolution.getInstance();
-
 	}
-
 }
