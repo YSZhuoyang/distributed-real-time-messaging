@@ -23,6 +23,8 @@ public class ClientSolution extends Thread
 	private static final Logger log = LogManager.getLogger();
 	private static ClientSolution clientSolution;
 	private TextFrame textFrame;
+	private loginFrame loginframe;
+	
 	
 	/*
 	 * additional variables
@@ -59,7 +61,7 @@ public class ClientSolution extends Thread
 			
 		// open the gui
 		log.debug("opening the gui");
-		textFrame = new TextFrame();
+		loginframe = new loginFrame();
 			
 		// start the client's thread
 		
@@ -85,8 +87,8 @@ public class ClientSolution extends Thread
 	// called by the gui when the user clicks disconnect
 	public void disconnect()
 	{
-		textFrame.setVisible(false);
-		textFrame.dispose();
+		loginframe.setVisible(false);
+		//loginframe.dispose();
 		/*
 		 * other things to do
 		 */
@@ -121,24 +123,24 @@ public class ClientSolution extends Thread
 				case JsonMessage.REGISTER_SUCCESS:
 					log.info("Register success received");
 					//closeConnection();
-					textFrame.infoBox("Register success received","message");
+					loginframe.infoBox("Register success received","message");
 					return false;
 					
 				case JsonMessage.REGISTER_FAILED:
 					log.info("Register failed");
-					textFrame.infoBox("Register failed received","message");
-					//disconnect();
+					loginframe.infoBox("Register failed received","message");
+					disconnect();
 					
 					return processRegisterFailedMsg(receivedJson);
 					
 				case JsonMessage.REDIRECT:
 					String port = receivedJson.get("port").getAsString();
-					textFrame.infoBox("redirecting to "+ port,"message");
+					loginframe.infoBox("redirecting to "+ port,"message");
 					return processRedirectMsg(receivedJson);
 				
 				case JsonMessage.AUTHENTICATION_FAIL:
 					log.info("Client failed to send activity message to server.");
-					textFrame.infoBox("Authentication failed","message");
+					loginframe.infoBox("Authentication failed","message");
 					
 					// Close the current connection
 					disconnect();
@@ -146,15 +148,15 @@ public class ClientSolution extends Thread
 
 				case JsonMessage.LOGIN_SUCCESS:
 					log.info("Login success received");
-					textFrame.infoBox("Login success received","message");
-					textFrame.setVisible(false);
-					textFrame.TextFrame();
+					loginframe.infoBox("Login success received","message");
+					loginframe.setVisible(false);
+					textFrame = new TextFrame();
 					
 					return false;
 					
 				case JsonMessage.LOGIN_FAILED:
 					log.info("Login failed");
-					textFrame.infoBox("login failed","message");
+					loginframe.infoBox("login failed","message");
 					
 					disconnect();
 					
@@ -190,6 +192,7 @@ public class ClientSolution extends Thread
 				String receivedMsg = inreader.readLine();
 				closed = process(receivedMsg);
 			}
+			
 		}
 		catch (IOException e)
 		{
@@ -280,12 +283,13 @@ public class ClientSolution extends Thread
 				writer = new PrintWriter(out, true);
 				
 				closed = false;	
+				start();
 			}
 			catch (IOException e)
 			{
 				log.debug("Client establish connection failed: " + e.getMessage());
 			}
-			start();
+			
 		}
 	}
 	
