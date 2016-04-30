@@ -18,7 +18,12 @@ Multi-server broadcast client messages.
 
 * Eclipse
 * JavaSE 8+
-* Dependencies: Gson 2.6.2, commons-cli-1.3.1, log4j-2.5, json_simple-1.1
+* Dependencies:
+
+        commons-cli-1.3.1	Apache License Version 2.0
+        apache-log4j-2.5	Apache License Version 2.0
+        json_simple-1.1         The JSON License
+        gson-2.6.2	        Apache License Version 2.0
 
 ## Setup servers
 
