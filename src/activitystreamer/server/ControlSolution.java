@@ -419,9 +419,9 @@ public class ControlSolution extends Control
 
 			// Add client info
 			clientInfoList.put(username, secret);
-			con.closeCon();
+			//con.closeCon();
 			
-			return true;
+			return false;
 		}
 
 		// Create a new server list managing lock info

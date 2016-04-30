@@ -59,7 +59,7 @@ public class ClientSolution extends Thread
 			establishConnection();
 			
 			// Testing
-			sendRegisterMsg();
+			//sendRegisterMsg();
 			//sendLoginMsg();
 			//sendAnonymusLoginMsg();
 			
@@ -129,10 +129,9 @@ public class ClientSolution extends Thread
 				
 				case JsonMessage.REGISTER_SUCCESS:
 					log.info("Register success received");
-					
-					closeConnection();
-					
-					return true;
+					//closeConnection();
+					textFrame.infoBox("Register success received","message");
+					return false;
 					
 				case JsonMessage.REGISTER_FAILED:
 					log.info("Register failed");
@@ -152,7 +151,8 @@ public class ClientSolution extends Thread
 
 				case JsonMessage.LOGIN_SUCCESS:
 					log.info("Login success received");
-					
+					//textFrame.infoBox("Login success received","message");
+					textFrame.TextFrame();
 					return false;
 					
 				case JsonMessage.LOGIN_FAILED:
@@ -306,17 +306,16 @@ public class ClientSolution extends Thread
 		}
 	}
 
-	private void sendRegisterMsg()
+	public void sendRegisterMsg()
 	{
 		RegisterMsg registerMsg = new RegisterMsg();
 		registerMsg.setUsername(Settings.getUsername());
 		registerMsg.setSecret(Settings.getSecret());
 		String registerMessage = registerMsg.toJsonString();
-
 		writer.println(registerMessage);
 	}
 	
-	private void sendAnonymusLoginMsg()
+	public void sendAnonymusLoginMsg()
 	{
 		AnonymousLoginMsg anonymusLoginMsg = new AnonymousLoginMsg();
 		String anonymusLoginMessage = anonymusLoginMsg.toJsonString();
@@ -327,7 +326,7 @@ public class ClientSolution extends Thread
 		writer.println(anonymusLoginMessage);
 	}
 	
-	private void sendLoginMsg()
+	public void sendLoginMsg()
 	{
 		LoginMsg loginMsg = new LoginMsg();
 		loginMsg.setUsername(Settings.getUsername());

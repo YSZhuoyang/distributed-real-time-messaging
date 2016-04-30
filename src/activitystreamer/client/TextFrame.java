@@ -9,16 +9,21 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.border.Border;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+
+import activitystreamer.util.Settings;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,10 +39,65 @@ public class TextFrame extends JFrame implements ActionListener
 	private JTextArea inputText;
 	private JTextArea outputText;
 	private JButton sendButton;
+	private JButton loginButton;
+	private JButton registerButton;
 	private JButton disconnectButton;
+	private JButton anonymousButton;
+	private JPasswordField passwordText;
+	private JTextField userText;
 	private JSONParser parser = new JSONParser();
+	private final static int DEFAULT_PSWD_CHARS = 10;
+	private JTextField nameField = new JTextField(DEFAULT_PSWD_CHARS);
+	final JPasswordField pswdField = new JPasswordField(DEFAULT_PSWD_CHARS);
 
-	public TextFrame()
+	public TextFrame(){
+		JFrame frame = new JFrame("User login");
+		frame.setSize(300,150);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+		JPanel panel = new JPanel();
+		frame.add(panel);
+		panel.setLayout(null);
+
+		JLabel userLabel = new JLabel("User");
+		userLabel.setBounds(10, 10, 80, 25);
+		panel.add(userLabel);
+
+		userText = new JTextField(20);
+		userText.setText(Settings.getUsername());
+		userText.setBounds(100, 10, 160, 25);
+		panel.add(userText);
+
+		JLabel passwordLabel = new JLabel("Secret");
+		passwordLabel.setBounds(10, 40, 80, 25);
+		panel.add(passwordLabel);
+
+		passwordText = new JPasswordField(20);
+		passwordText.setText(Settings.getSecret());
+		passwordText.setBounds(100, 40, 160, 25);
+		panel.add(passwordText);
+
+		loginButton = new JButton("login");
+		loginButton.setBounds(10, 80, 80, 25);
+		panel.add(loginButton);
+		loginButton.addActionListener(this);
+		
+		registerButton = new JButton("register");
+		registerButton.setBounds(110, 80, 80, 25);
+		panel.add(registerButton);
+		registerButton.addActionListener(this);
+		
+		anonymousButton = new JButton("anonymous");
+		anonymousButton.setBounds(210, 80, 80, 25);
+		panel.add(anonymousButton);
+		anonymousButton.addActionListener(this);
+		
+		JLabel server = new JLabel(Settings.getRemoteHostname()+":"+Settings.getRemotePort());
+		server.setBounds(10, 100, 150, 25);
+		panel.add(server);
+		frame.setVisible(true);
+	}
+	public void TextFrame()
 	{
 		setTitle("ActivityStreamer Text I/O");
 		JPanel mainPanel = new JPanel();
@@ -61,11 +121,14 @@ public class TextFrame extends JFrame implements ActionListener
 		JPanel buttonGroup = new JPanel();
 		sendButton = new JButton("Send");
 		disconnectButton = new JButton("Disconnect");
+		//loginButton = new JButton("Login");
 		buttonGroup.add(sendButton);
 		buttonGroup.add(disconnectButton);
+		//buttonGroup.add(loginButton);
 		inputPanel.add(buttonGroup, BorderLayout.SOUTH);
 		sendButton.addActionListener(this);
 		disconnectButton.addActionListener(this);
+		//loginButton.addActionListener(this);
 
 		outputText = new JTextArea();
 		scrollPane = new JScrollPane(outputText);
@@ -95,6 +158,10 @@ public class TextFrame extends JFrame implements ActionListener
 	{
         JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.INFORMATION_MESSAGE);
 	}
+	public void infoBox(String infoMessage, String titleBar)
+    {
+        JOptionPane.showMessageDialog(null, infoMessage, "InfoBox: " + titleBar, JOptionPane.INFORMATION_MESSAGE);
+    }
 	
 	public void setOutputText(final JSONObject obj)
 	{
@@ -114,20 +181,28 @@ public class TextFrame extends JFrame implements ActionListener
 		if (e.getSource() == sendButton)
 		{
 			String msg = inputText.getText().trim().replaceAll("\r", "").replaceAll("\n", "").replaceAll("\t", "");
-			
-			if (msg.isEmpty())
-			{
-				showErrorMsg("Message cannot be empty");
-				
-				return;
-			}
-			
 			ClientSolution.getInstance().sendActivityObject(msg);
 		}
 		else if (e.getSource() == disconnectButton)
 		{
 			ClientSolution.getInstance().sendLogoutMsg();
 			ClientSolution.getInstance().disconnect();
+		}
+		else if (e.getSource() == loginButton)
+		{
+			ClientSolution.getInstance().sendLoginMsg();
+		
+		}
+		else if (e.getSource() == registerButton)
+		{
+			Settings.setSecret(passwordText.getText());
+			Settings.setUsername(userText.getText());
+			ClientSolution.getInstance().sendRegisterMsg();
+		}
+		else if (e.getSource() == anonymousButton)
+		{
+			ClientSolution.getInstance().sendAnonymusLoginMsg();
+			
 		}
 	}
 }
