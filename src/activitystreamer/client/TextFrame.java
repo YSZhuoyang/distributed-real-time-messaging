@@ -9,13 +9,13 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
+
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
+
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import javax.swing.JTextField;
+
 import javax.swing.border.Border;
 
 import org.apache.logging.log4j.LogManager;
@@ -23,8 +23,6 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import activitystreamer.Client;
-import activitystreamer.util.Settings;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -41,11 +39,11 @@ public class TextFrame extends JFrame implements ActionListener
 	private JTextArea outputText;
 	private JButton sendButton;
 	private JButton disconnectButton;
-	
-	
 	private JSONParser parser = new JSONParser();
-
-	public TextFrame(){
+	
+	
+	public TextFrame()
+	{
 		setTitle("ActivityStreamer Text I/O");
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new GridLayout(1, 2));
@@ -106,6 +104,7 @@ public class TextFrame extends JFrame implements ActionListener
         JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
+	
 	public void setOutputText(final JSONObject obj)
 	{
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -130,8 +129,6 @@ public class TextFrame extends JFrame implements ActionListener
 		{
 			ClientSolution.getInstance().sendLogoutMsg();
 			ClientSolution.getInstance().disconnect();
-			
 		}
 	}
 }
-

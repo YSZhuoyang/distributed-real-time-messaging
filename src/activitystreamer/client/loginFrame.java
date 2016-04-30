@@ -22,13 +22,14 @@ public class loginFrame extends JFrame implements ActionListener{
 	private JTextField userText;
 	private JTextField hostnameText;
 	private JTextField hostportText;
+	private JFrame frame;
 	private final static int DEFAULT_PSWD_CHARS = 10;
 	private JTextField nameField = new JTextField(DEFAULT_PSWD_CHARS);
 	final JPasswordField pswdField = new JPasswordField(DEFAULT_PSWD_CHARS);
 	private JPasswordField passwordText;
 	private JButton anonymousButton;
 	public loginFrame(){
-		JFrame frame = new JFrame("User login");
+		frame = new JFrame("User login");
 		frame.setSize(300,200);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
@@ -87,6 +88,9 @@ public class loginFrame extends JFrame implements ActionListener{
 		panel.add(anonymousButton);
 		anonymousButton.addActionListener(this);
 		frame.setVisible(true);
+	}
+	public void closeFrame(){
+		frame.setVisible(false);
 	}
 	public void actionPerformed(ActionEvent e)
 	{
