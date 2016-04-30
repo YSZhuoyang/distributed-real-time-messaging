@@ -29,6 +29,11 @@ public class ActivityMsg extends JsonMessage
 		}
 	}
 	
+	public ActivityMsg()
+	{
+		setCommand(JsonMessage.ACTIVITY_MESSAGE);
+	}
+	
 	public void setObject(String obj)
 	{
 		activity.setObject(obj);

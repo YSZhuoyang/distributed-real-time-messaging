@@ -32,7 +32,7 @@ public class ClientSolution extends Thread
 	private DataInputStream in;
 	private DataOutputStream out;
 	private BufferedReader inreader;
-	private boolean term;
+	private boolean closed;
 	
 	// this is a singleton object
 	public static ClientSolution getInstance()
@@ -50,6 +50,7 @@ public class ClientSolution extends Thread
 		/*
 		 * some additional initialization
 		 */
+		closed = true;
 		
 		// Test: register only
 		if (Settings.getRemoteHostname() != null)
@@ -77,10 +78,8 @@ public class ClientSolution extends Thread
 	}
 
 	// called by the gui when the user clicks "send"
-	public void sendActivityObject(JsonObject receivedJsonObj)
+	public void sendActivityObject(String activityContent)
 	{
-		String activityContent = new Gson().toJson(receivedJsonObj);
-		
 		log.info("Activity message sent: " + activityContent);
 		
 		ActivityMsg activityMsg = new ActivityMsg();
@@ -100,10 +99,11 @@ public class ClientSolution extends Thread
 		/*
 		 * other things to do
 		 */
+		sendLogoutMsg();
 		closeConnection();
 	}
 	
-	private synchronized void process(String receivedJsonStr)
+	private synchronized boolean process(String receivedJsonStr)
 	{
 		log.debug("Client received: " + receivedJsonStr);
 		
@@ -117,24 +117,20 @@ public class ClientSolution extends Thread
 				
 				textFrame.displayActivityMessageText(receivedJson);
 				
-				break;
+				return false;
 			
 			case JsonMessage.REGISTER_SUCCESS:
 				log.info("Register success received");
 				
-				break;
+				return false;
 				
 			case JsonMessage.REGISTER_FAILED:
 				log.info("Register failed");
 
-				processRegisterFailedMsg(receivedJson);
-				
-				System.exit(0);
+				return processRegisterFailedMsg(receivedJson);
 				
 			case JsonMessage.REDIRECT:
-				processRedirectMsg(receivedJson);
-				
-				break;
+				return processRedirectMsg(receivedJson);
 			
 			case JsonMessage.AUTHENTICATION_FAIL:
 				log.info("Client failed to send activity message to server.");
@@ -142,31 +138,27 @@ public class ClientSolution extends Thread
 				// Close the current connection
 				disconnect();
 				
-				break;
+				return true;
 
 			case JsonMessage.LOGIN_SUCCESS:
 				log.info("Login success received");
 				
-				break;
+				return false;
 				
 			case JsonMessage.LOGIN_FAILED:
 				log.info("Login failed");
 				
 				disconnect();
-				break;
-				//System.exit(0);
+				
+				return true;
 				
 			case JsonMessage.INVALID_MESSAGE:
 				log.info("Client failed to send activity message to server.");
 				
-				processInvalidMsg(receivedJson);
-				
-				break;
+				return processInvalidMsg(receivedJson);
 			
 			default:
-				processUnknownMsg(receivedJson);
-				
-				break;
+				return processUnknownMsg(receivedJson);
 		}
 	}
 
@@ -178,11 +170,11 @@ public class ClientSolution extends Thread
 		
 		try
 		{
-			while (!term)
+			while (!closed)
 			{
 				String receivedMsg = inreader.readLine();
 				
-				process(receivedMsg);
+				closed = process(receivedMsg);
 			}
 		}
 		catch (IOException e)
@@ -194,14 +186,16 @@ public class ClientSolution extends Thread
 	/*
 	 * additional methods
 	 */
-	private void processUnknownMsg(JsonObject receivedJsonObj)
+	private boolean processUnknownMsg(JsonObject receivedJsonObj)
 	{
 		log.info("Unknown message received");
 		
 		disconnect();
+		
+		return true;
 	}
 	
-	private void processRedirectMsg(JsonObject receivedJsonObj)
+	private boolean processRedirectMsg(JsonObject receivedJsonObj)
 	{
 		log.info("Redirect");
 		
@@ -220,22 +214,27 @@ public class ClientSolution extends Thread
 		
 		establishConnection();
 		sendLoginMsg();
-	}
-	
-	private void processInvalidMsg(JsonObject receivedJsonObj)
-	{
-		String info = receivedJsonObj.get("info").getAsString();
 		
-		textFrame.showErrorMsg(info);
+		return false;
 	}
 	
-	private void processRegisterFailedMsg(JsonObject receivedJsonObj)
+	private boolean processInvalidMsg(JsonObject receivedJsonObj)
 	{
 		String info = receivedJsonObj.get("info").getAsString();
 		
 		textFrame.showErrorMsg(info);
 		
+		return true;
+	}
+	
+	private boolean processRegisterFailedMsg(JsonObject receivedJsonObj)
+	{
+		String info = receivedJsonObj.get("info").getAsString();
+		
+		textFrame.showErrorMsg(info);
 		disconnect();
+		
+		return true;
 	}
 
 	private synchronized void establishConnection()
@@ -249,6 +248,8 @@ public class ClientSolution extends Thread
 			
 			out = new DataOutputStream(socket.getOutputStream());
 			writer = new PrintWriter(out, true);
+			
+			closed = false;
 			
 		}
 		catch (IOException e)
@@ -266,6 +267,8 @@ public class ClientSolution extends Thread
 			
 			out.close();
 			writer.close();
+			
+			closed = true;
 		}
 		catch (IOException e)
 		{
@@ -312,6 +315,6 @@ public class ClientSolution extends Thread
 		
 		writer.println(logoutMsg.toJsonString());
 		
-		term = true;
+		closed = true;
 	}
 }

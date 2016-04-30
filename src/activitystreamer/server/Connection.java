@@ -74,14 +74,16 @@ public class Connection extends Thread
 		try
 		{
 			String data;
+			
 			log.info("connection running");
 			
 			while (!term && (data = inreader.readLine()) != null)
 			{
-				//term = Control.getInstance().process(this, data);
 				term = ControlSolution.getInstance().process(this, data);
 			}
+			
 			log.debug("connection closed to " + Settings.socketAddress(socket));
+			
 			Control.getInstance().connectionClosed(this);
 			in.close();
 		}
