@@ -4,15 +4,15 @@ Multi-server broadcast client messages.
 
 ## Server architecture
 
-             |----------------------------------|
-             |                 root             |
-client1------|                /    \            |------client4
-             |          server1    server2      |
-client2------|           / \          / \       |------client5
-             |    server3   ...    ...   ...    |
-client3------|      / \                         |------client6
-             |   ...   ...                      |
-             |----------------------------------|
+                 |----------------------------------|
+                 |                 root             |
+    client1------|                /    \            |------client4
+                 |          server1    server2      |
+    client2------|           / \          / \       |------client5
+                 |    server3   ...    ...   ...    |
+    client3------|      / \                         |------client6
+                 |   ...   ...                      |
+                 |----------------------------------|
 
 ## Prerequisites of running the project
 
