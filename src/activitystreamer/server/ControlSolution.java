@@ -396,14 +396,13 @@ public class ControlSolution extends Control
 		if (clientInfoList.containsKey(username))
 		{
 			log.info("Register failed. Username already exists!");
-
 			RegisterFailedMsg registerFailedMsg = new RegisterFailedMsg();
 			registerFailedMsg.setInfo(username + " is already registered in the system");
 
 			String registFailedJsonStr = registerFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
 
-			return true;
+			return false;
 		}
 		// Only root server, no other server exists
 		else if (serverInfoList.size() == 0)

@@ -50,31 +50,22 @@ public class ClientSolution extends Thread
 		/*
 		 * some additional initialization
 		 */
-		closed = true;
-		
+		closed=true;
 		// Test: register only
-		if (Settings.getRemoteHostname() != null)
-		{
-			// Connect to a server host
-			establishConnection();
+	
+		
+		// Testing
+		//sendRegisterMsg();
 			
-			// Testing
-			//sendRegisterMsg();
-			//sendLoginMsg();
-			//sendAnonymusLoginMsg();
+		// open the gui
+		log.debug("opening the gui");
+		textFrame = new TextFrame();
 			
-			// open the gui
-			log.debug("opening the gui");
-			
-			textFrame = new TextFrame();
-			
-			// start the client's thread
-			start();
-		}
-		else
-		{
-			log.debug("Host name is empty");
-		}
+		// start the client's thread
+		
+		
+		
+	
 	}
 
 	// called by the gui when the user clicks "send"
@@ -95,7 +86,7 @@ public class ClientSolution extends Thread
 	public void disconnect()
 	{
 		textFrame.setVisible(false);
-
+		textFrame.dispose();
 		/*
 		 * other things to do
 		 */
@@ -135,28 +126,35 @@ public class ClientSolution extends Thread
 					
 				case JsonMessage.REGISTER_FAILED:
 					log.info("Register failed");
-
+					textFrame.infoBox("Register failed received","message");
+					//disconnect();
+					
 					return processRegisterFailedMsg(receivedJson);
 					
 				case JsonMessage.REDIRECT:
+					String port = receivedJson.get("port").getAsString();
+					textFrame.infoBox("redirecting to "+ port,"message");
 					return processRedirectMsg(receivedJson);
 				
 				case JsonMessage.AUTHENTICATION_FAIL:
 					log.info("Client failed to send activity message to server.");
+					textFrame.infoBox("Authentication failed","message");
 					
 					// Close the current connection
 					disconnect();
-					
 					return true;
 
 				case JsonMessage.LOGIN_SUCCESS:
 					log.info("Login success received");
-					//textFrame.infoBox("Login success received","message");
+					textFrame.infoBox("Login success received","message");
+					textFrame.setVisible(false);
 					textFrame.TextFrame();
+					
 					return false;
 					
 				case JsonMessage.LOGIN_FAILED:
 					log.info("Login failed");
+					textFrame.infoBox("login failed","message");
 					
 					disconnect();
 					
@@ -190,7 +188,6 @@ public class ClientSolution extends Thread
 			while (!closed)
 			{
 				String receivedMsg = inreader.readLine();
-				
 				closed = process(receivedMsg);
 			}
 		}
@@ -249,6 +246,7 @@ public class ClientSolution extends Thread
 		String info = receivedJsonObj.get("info").getAsString();
 		
 		textFrame.showErrorMsg(info);
+		
 		disconnect();
 		
 		return true;
@@ -268,23 +266,26 @@ public class ClientSolution extends Thread
 		return true;
 	}
 	
-	private synchronized void establishConnection()
-	{
-		try
-		{
-			socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
-			
-			in = new DataInputStream(socket.getInputStream());
-			inreader = new BufferedReader(new InputStreamReader(in));
-			
-			out = new DataOutputStream(socket.getOutputStream());
-			writer = new PrintWriter(out, true);
-			
-			closed = false;	
-		}
-		catch (IOException e)
-		{
-			log.debug("Client establish connection failed: " + e.getMessage());
+	public synchronized void establishConnection()
+	{	
+		while(closed){
+			try
+			{
+				socket = new Socket(Settings.getRemoteHostname(), Settings.getRemotePort());
+				
+				in = new DataInputStream(socket.getInputStream());
+				inreader = new BufferedReader(new InputStreamReader(in));
+				
+				out = new DataOutputStream(socket.getOutputStream());
+				writer = new PrintWriter(out, true);
+				
+				closed = false;	
+			}
+			catch (IOException e)
+			{
+				log.debug("Client establish connection failed: " + e.getMessage());
+			}
+			start();
 		}
 	}
 	
@@ -297,7 +298,6 @@ public class ClientSolution extends Thread
 			
 			out.close();
 			writer.close();
-			
 			closed = true;
 		}
 		catch (IOException e)

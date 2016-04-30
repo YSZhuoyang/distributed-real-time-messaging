@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import activitystreamer.Client;
 import activitystreamer.util.Settings;
 
 import com.google.gson.Gson;
@@ -45,6 +46,8 @@ public class TextFrame extends JFrame implements ActionListener
 	private JButton anonymousButton;
 	private JPasswordField passwordText;
 	private JTextField userText;
+	private JTextField hostnameText;
+	private JTextField hostportText;
 	private JSONParser parser = new JSONParser();
 	private final static int DEFAULT_PSWD_CHARS = 10;
 	private JTextField nameField = new JTextField(DEFAULT_PSWD_CHARS);
@@ -52,49 +55,63 @@ public class TextFrame extends JFrame implements ActionListener
 
 	public TextFrame(){
 		JFrame frame = new JFrame("User login");
-		frame.setSize(300,150);
+		frame.setSize(300,200);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+		frame.setLocationRelativeTo(null);
 		JPanel panel = new JPanel();
 		frame.add(panel);
 		panel.setLayout(null);
+		
+		JLabel remoteHostLabel = new JLabel("host");
+		remoteHostLabel.setBounds(10, 10, 80, 25);
+		panel.add(remoteHostLabel);
 
+		hostnameText = new JTextField(20);
+		hostnameText.setText(Settings.getRemoteHostname());
+		hostnameText.setBounds(100, 10, 160, 25);
+		panel.add(hostnameText);
+
+		JLabel portLabel = new JLabel("port");
+		portLabel.setBounds(10, 40, 80, 25);
+		panel.add(portLabel);
+
+		hostportText = new JTextField(20);
+		hostportText.setText(""+Settings.getRemotePort());
+		hostportText.setBounds(100, 40, 160, 25);
+		panel.add(hostportText);
+		
 		JLabel userLabel = new JLabel("User");
-		userLabel.setBounds(10, 10, 80, 25);
+		userLabel.setBounds(10, 70, 80, 25);
 		panel.add(userLabel);
 
 		userText = new JTextField(20);
 		userText.setText(Settings.getUsername());
-		userText.setBounds(100, 10, 160, 25);
+		userText.setBounds(100, 70, 160, 25);
 		panel.add(userText);
 
 		JLabel passwordLabel = new JLabel("Secret");
-		passwordLabel.setBounds(10, 40, 80, 25);
+		passwordLabel.setBounds(10, 100, 80, 25);
 		panel.add(passwordLabel);
 
 		passwordText = new JPasswordField(20);
 		passwordText.setText(Settings.getSecret());
-		passwordText.setBounds(100, 40, 160, 25);
+		passwordText.setBounds(100, 100, 160, 25);
 		panel.add(passwordText);
 
 		loginButton = new JButton("login");
-		loginButton.setBounds(10, 80, 80, 25);
+		loginButton.setBounds(10, 130, 80, 25);
 		panel.add(loginButton);
 		loginButton.addActionListener(this);
 		
 		registerButton = new JButton("register");
-		registerButton.setBounds(110, 80, 80, 25);
+		registerButton.setBounds(110, 130, 80, 25);
 		panel.add(registerButton);
 		registerButton.addActionListener(this);
 		
 		anonymousButton = new JButton("anonymous");
-		anonymousButton.setBounds(210, 80, 80, 25);
+		anonymousButton.setBounds(210, 130, 80, 25);
 		panel.add(anonymousButton);
 		anonymousButton.addActionListener(this);
-		
-		JLabel server = new JLabel(Settings.getRemoteHostname()+":"+Settings.getRemotePort());
-		server.setBounds(10, 100, 150, 25);
-		panel.add(server);
 		frame.setVisible(true);
 	}
 	public void TextFrame()
@@ -187,22 +204,33 @@ public class TextFrame extends JFrame implements ActionListener
 		{
 			ClientSolution.getInstance().sendLogoutMsg();
 			ClientSolution.getInstance().disconnect();
+			
 		}
 		else if (e.getSource() == loginButton)
 		{
+			Settings.setSecret(passwordText.getText());
+			Settings.setUsername(userText.getText());
+			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
+			Settings.setRemoteHostname(hostnameText.getText());
+			ClientSolution.getInstance().establishConnection();
 			ClientSolution.getInstance().sendLoginMsg();
-		
+			
 		}
 		else if (e.getSource() == registerButton)
 		{
 			Settings.setSecret(passwordText.getText());
 			Settings.setUsername(userText.getText());
+			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
+			Settings.setRemoteHostname(hostnameText.getText());
+			log.info(Integer.parseInt(hostportText.getText()));
+			ClientSolution.getInstance().establishConnection();
 			ClientSolution.getInstance().sendRegisterMsg();
+
 		}
 		else if (e.getSource() == anonymousButton)
 		{
+			ClientSolution.getInstance().establishConnection();
 			ClientSolution.getInstance().sendAnonymusLoginMsg();
-			
 		}
 	}
 }
