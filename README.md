@@ -10,7 +10,7 @@ Multi-server broadcast client messages.
                  |          server1    server2      |
     client2------|           / \          / \       |------client5
                  |    server3   ...    ...   ...    |
-    client3------|      / \                         |------client6
+    client3------|      / \                         |
                  |   ...   ...                      |
                  |----------------------------------|
 
@@ -43,6 +43,11 @@ Multi-server broadcast client messages.
 * Login with username and secret: enter username， secret, remote host，and remote port number. Click 'login' button.
 * Anonymous login without register: Click 'Anonymous login' button.
 
+## Broadcast activity message
+
+* After successfully login, a new broadcast message GUI will appear.
+* Enter a sentence such as 'hello', there is no need to enter a Json format string.
+
 ## File structures
 
     ../src/activitystreamer          ---Main entries of client and server
@@ -51,7 +56,7 @@ Multi-server broadcast client messages.
     ../src/activitystreamer.util     ---Helper functions
     ../src/activitystreamer.message  ---Standardized message implementations
 
-## Contributers
+## Contributors
 
 * Sangzhuoyang Yu
 * Kangping Huang
