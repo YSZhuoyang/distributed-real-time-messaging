@@ -18,7 +18,7 @@ Multi-server broadcast client messages.
 
 * Eclipse
 * JavaSE 8+
-* Dependencies:
+* Licenses of dependencies:
 
         commons-cli-1.3.1	Apache License Version 2.0
         apache-log4j-2.5	Apache License Version 2.0
