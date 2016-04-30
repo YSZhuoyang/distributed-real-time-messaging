@@ -405,6 +405,24 @@ public class ControlSolution extends Control
 
 			return true;
 		}
+		// Only root server, no other server exists
+		else if (serverInfoList.size() == 0)
+		{
+			log.info("Register_Success");
+
+			// Send register success message
+			RegistSuccMsg registerSuccMsg = new RegistSuccMsg();
+			registerSuccMsg.setInfo("register success for " + username);
+
+			String registSuccJsonStr = registerSuccMsg.toJsonString();
+			con.writeMsg(registSuccJsonStr);
+
+			// Add client info
+			clientInfoList.put(username, secret);
+			con.closeCon();
+			
+			return true;
+		}
 
 		// Create a new server list managing lock info
 		LockInfo lockInfo = new LockInfo(username, secret);
@@ -545,7 +563,7 @@ public class ControlSolution extends Control
 					String registSuccJsonStr = registerSuccMsg.toJsonString();
 					clientConnection.writeMsg(registSuccJsonStr);
 
-					// Add client info and client connection
+					// Add client info
 					clientInfoList.put(username, secret);
 					lockInfoList.remove(lockInfo);
 
