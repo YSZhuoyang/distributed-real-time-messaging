@@ -288,7 +288,7 @@ public class ControlSolution extends Control
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
 		
-		if (hasClientInfo(username, secret) || username.equals(JsonMessage.ANONYMUS_USERNAME))
+		if (username.equals(JsonMessage.ANONYMOUS_USERNAME) || hasClientInfo(username, secret))
 		{
 			log.debug("Broadcast activity message received from client");
 
@@ -334,12 +334,12 @@ public class ControlSolution extends Control
 		String username = receivedJsonObj.get("username").getAsString();
 
 		// Secret or username is not correct, login failed
-		if (!hasClientInfo(username, secret) && !username.equals(JsonMessage.ANONYMUS_USERNAME))
+		if (!username.equals(JsonMessage.ANONYMOUS_USERNAME) && !hasClientInfo(username, secret))
 		{
 			log.info("attempt to login with a wrong secret");
 
 			LoginFailedMsg loginFailedMsg = new LoginFailedMsg();
-			loginFailedMsg.setInfo("Register failed, secret does not exist!");
+			loginFailedMsg.setInfo("user attempt to login with a wrong secret");
 
 			String registFailedJsonStr = loginFailedMsg.toJsonString();
 			con.writeMsg(registFailedJsonStr);
@@ -827,6 +827,6 @@ public class ControlSolution extends Control
 
 	private boolean hasClientInfo(String username, String secret)
 	{
-		return clientInfoList.containsKey(username) || clientInfoList.get(username).equals(secret);
+		return clientInfoList.containsKey(username) && clientInfoList.get(username).equals(secret);
 	}
 }

@@ -36,7 +36,7 @@ public class JsonMessage
 	public final static String SERVER_ANNOUNCE = "SERVER_ANNOUNCE";
 	
 	public final static String UNAUTHENTICATED_SERVER = "This is an unauthenticated server!!";
-	public final static String ANONYMUS_USERNAME = "anonymous";
+	public final static String ANONYMOUS_USERNAME = "anonymous";
 	
 	
 	public JsonMessage()

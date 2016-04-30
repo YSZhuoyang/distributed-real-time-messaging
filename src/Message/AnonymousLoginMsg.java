@@ -1,14 +1,14 @@
 package Message;
 
-public class AnonymusLoginMsg extends JsonMessage
+public class AnonymousLoginMsg extends JsonMessage
 {
 	private String username = "";
 	private String secret = "";
 
-	public AnonymusLoginMsg()
+	public AnonymousLoginMsg()
 	{
 		setCommand(JsonMessage.LOGIN);
-		setUsername(JsonMessage.ANONYMUS_USERNAME);
+		setUsername(JsonMessage.ANONYMOUS_USERNAME);
 	}
 
 	private void setUsername(String n)

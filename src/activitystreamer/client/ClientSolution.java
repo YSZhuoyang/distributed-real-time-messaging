@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import Message.*;
+import activitystreamer.server.Connection;
 import activitystreamer.util.Settings;
 
 
@@ -59,9 +60,9 @@ public class ClientSolution extends Thread
 			establishConnection();
 			
 			// Testing
-			sendRegisterMsg();
+			//sendRegisterMsg();
 			//sendLoginMsg();
-			//sendAnonymusLoginMsg();
+			sendAnonymusLoginMsg();
 			
 			// open the gui
 			log.debug("opening the gui");
@@ -107,58 +108,73 @@ public class ClientSolution extends Thread
 	{
 		log.debug("Client received: " + receivedJsonStr);
 		
-		JsonObject receivedJson = new Gson().fromJson(receivedJsonStr, JsonObject.class);
-		String command = receivedJson.get("command").getAsString();
-		
-		switch (command)
+		try
 		{
-			case JsonMessage.ACTIVITY_BROADCAST:
-				log.info("Activity broadcast received");
-				
-				textFrame.displayActivityMessageText(receivedJson);
-				
-				return false;
+			JsonObject receivedJson = new Gson().fromJson(receivedJsonStr, JsonObject.class);
 			
-			case JsonMessage.REGISTER_SUCCESS:
-				log.info("Register success received");
-				
-				return false;
-				
-			case JsonMessage.REGISTER_FAILED:
-				log.info("Register failed");
-
-				return processRegisterFailedMsg(receivedJson);
-				
-			case JsonMessage.REDIRECT:
-				return processRedirectMsg(receivedJson);
-			
-			case JsonMessage.AUTHENTICATION_FAIL:
-				log.info("Client failed to send activity message to server.");
-				
-				// Close the current connection
-				disconnect();
-				
+			if (!containCommandField(receivedJson))
+			{
 				return true;
-
-			case JsonMessage.LOGIN_SUCCESS:
-				log.info("Login success received");
-				
-				return false;
-				
-			case JsonMessage.LOGIN_FAILED:
-				log.info("Login failed");
-				
-				disconnect();
-				
-				return true;
-				
-			case JsonMessage.INVALID_MESSAGE:
-				log.info("Client failed to send activity message to server.");
-				
-				return processInvalidMsg(receivedJson);
+			}
 			
-			default:
-				return processUnknownMsg(receivedJson);
+			String command = receivedJson.get("command").getAsString();
+			
+			switch (command)
+			{
+				case JsonMessage.ACTIVITY_BROADCAST:
+					log.info("Activity broadcast received");
+					
+					textFrame.displayActivityMessageText(receivedJson);
+					
+					return false;
+				
+				case JsonMessage.REGISTER_SUCCESS:
+					log.info("Register success received");
+					
+					return false;
+					
+				case JsonMessage.REGISTER_FAILED:
+					log.info("Register failed");
+
+					return processRegisterFailedMsg(receivedJson);
+					
+				case JsonMessage.REDIRECT:
+					return processRedirectMsg(receivedJson);
+				
+				case JsonMessage.AUTHENTICATION_FAIL:
+					log.info("Client failed to send activity message to server.");
+					
+					// Close the current connection
+					disconnect();
+					
+					return true;
+
+				case JsonMessage.LOGIN_SUCCESS:
+					log.info("Login success received");
+					
+					return false;
+					
+				case JsonMessage.LOGIN_FAILED:
+					log.info("Login failed");
+					
+					disconnect();
+					
+					return true;
+					
+				case JsonMessage.INVALID_MESSAGE:
+					log.info("Client failed to send activity message to server.");
+					
+					return processInvalidMsg(receivedJson);
+				
+				default:
+					return processUnknownMsg(receivedJson);
+			}
+		}
+		catch (Exception e)
+		{
+			log.debug("Client receiving message failed: " + e.getMessage());
+			
+			return true;
 		}
 	}
 
@@ -236,7 +252,21 @@ public class ClientSolution extends Thread
 		
 		return true;
 	}
-
+	
+	private boolean containCommandField(JsonObject receivedJsonObj)
+	{
+		if (!receivedJsonObj.has("command"))
+		{
+			InvalidMsg invalidMsg = new InvalidMsg();
+			invalidMsg.setInfo("Message must contain field command");
+			writer.println(invalidMsg.toJsonString());
+			
+			return false;
+		}
+		
+		return true;
+	}
+	
 	private synchronized void establishConnection()
 	{
 		try
@@ -288,10 +318,10 @@ public class ClientSolution extends Thread
 	
 	private void sendAnonymusLoginMsg()
 	{
-		AnonymusLoginMsg anonymusLoginMsg = new AnonymusLoginMsg();
+		AnonymousLoginMsg anonymusLoginMsg = new AnonymousLoginMsg();
 		String anonymusLoginMessage = anonymusLoginMsg.toJsonString();
 		
-		Settings.setUsername(JsonMessage.ANONYMUS_USERNAME);
+		Settings.setUsername(JsonMessage.ANONYMOUS_USERNAME);
 		Settings.setSecret("");
 
 		writer.println(anonymusLoginMessage);
