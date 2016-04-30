@@ -9,17 +9,14 @@ import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import activitystreamer.client.ClientSolution;
+import activitystreamer.client.MainFrame;
 import activitystreamer.util.Settings;
 
 public class Client
 {
 	private static final Logger log = LogManager.getLogger();
 	
-	private static String username = null;
-	private static String userSecret = null;
 	
-
 	private static void help(Options options)
 	{
 		String header = "An ActivityStream Client for Unimelb COMP90015\n\n";
@@ -88,6 +85,7 @@ public class Client
 		 * maybe change the line below to suit your program
 		 */
 
-		ClientSolution c = ClientSolution.getInstance();
+		new MainFrame();
+		//ClientSolution c = ClientSolution.getInstance();
 	}
 }

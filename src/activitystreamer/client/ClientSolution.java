@@ -32,7 +32,8 @@ public class ClientSolution extends Thread
 	private DataInputStream in;
 	private DataOutputStream out;
 	private BufferedReader inreader;
-	private boolean closed;
+	private boolean connectionClosed;
+	private MainFrame mainFrame = null;
 	
 	// this is a singleton object
 	public static ClientSolution getInstance()
@@ -50,31 +51,7 @@ public class ClientSolution extends Thread
 		/*
 		 * some additional initialization
 		 */
-		closed = true;
-		
-		// Test: register only
-		if (Settings.getRemoteHostname() != null)
-		{
-			// Connect to a server host
-			establishConnection();
-			
-			// Testing
-			sendRegisterMsg();
-			//sendLoginMsg();
-			//sendAnonymusLoginMsg();
-			
-			// open the gui
-			log.debug("opening the gui");
-			
-			textFrame = new TextFrame();
-			
-			// start the client's thread
-			start();
-		}
-		else
-		{
-			log.debug("Host name is empty");
-		}
+		connectionClosed = true;
 	}
 
 	// called by the gui when the user clicks "send"
@@ -101,6 +78,12 @@ public class ClientSolution extends Thread
 		 */
 		sendLogoutMsg();
 		closeConnection();
+		System.exit(0);
+	}
+	
+	public void attachMainFrame(MainFrame mainFrame)
+	{
+		this.mainFrame = mainFrame;
 	}
 	
 	private synchronized boolean process(String receivedJsonStr)
@@ -130,7 +113,10 @@ public class ClientSolution extends Thread
 				case JsonMessage.REGISTER_SUCCESS:
 					log.info("Register success received");
 					
+					String info = receivedJson.get("info").getAsString();
+					mainFrame.showInfoBox(info);
 					closeConnection();
+					System.exit(0);
 					
 					return true;
 					
@@ -152,6 +138,16 @@ public class ClientSolution extends Thread
 
 				case JsonMessage.LOGIN_SUCCESS:
 					log.info("Login success received");
+
+					// open the gui
+					log.debug("opening the gui");
+					
+					mainFrame.hide();
+					
+					if (textFrame == null)
+					{
+						textFrame = new TextFrame();
+					}
 					
 					return false;
 					
@@ -187,11 +183,11 @@ public class ClientSolution extends Thread
 		
 		try
 		{
-			while (!closed)
+			while (!connectionClosed)
 			{
 				String receivedMsg = inreader.readLine();
 				
-				closed = process(receivedMsg);
+				connectionClosed = process(receivedMsg);
 			}
 		}
 		catch (IOException e)
@@ -240,6 +236,7 @@ public class ClientSolution extends Thread
 		String info = receivedJsonObj.get("info").getAsString();
 		
 		textFrame.showErrorMsg(info);
+		disconnect();
 		
 		return true;
 	}
@@ -268,7 +265,7 @@ public class ClientSolution extends Thread
 		return true;
 	}
 	
-	private synchronized void establishConnection()
+	public synchronized void establishConnection()
 	{
 		try
 		{
@@ -280,7 +277,7 @@ public class ClientSolution extends Thread
 			out = new DataOutputStream(socket.getOutputStream());
 			writer = new PrintWriter(out, true);
 			
-			closed = false;	
+			connectionClosed = false;	
 		}
 		catch (IOException e)
 		{
@@ -298,7 +295,9 @@ public class ClientSolution extends Thread
 			out.close();
 			writer.close();
 			
-			closed = true;
+			//socket.close();
+			
+			connectionClosed = true;
 		}
 		catch (IOException e)
 		{
@@ -306,7 +305,7 @@ public class ClientSolution extends Thread
 		}
 	}
 
-	private void sendRegisterMsg()
+	public void sendRegisterMsg()
 	{
 		RegisterMsg registerMsg = new RegisterMsg();
 		registerMsg.setUsername(Settings.getUsername());
@@ -316,7 +315,7 @@ public class ClientSolution extends Thread
 		writer.println(registerMessage);
 	}
 	
-	private void sendAnonymusLoginMsg()
+	public void sendAnonymusLoginMsg()
 	{
 		AnonymousLoginMsg anonymusLoginMsg = new AnonymousLoginMsg();
 		String anonymusLoginMessage = anonymusLoginMsg.toJsonString();
@@ -327,7 +326,7 @@ public class ClientSolution extends Thread
 		writer.println(anonymusLoginMessage);
 	}
 	
-	private void sendLoginMsg()
+	public void sendLoginMsg()
 	{
 		LoginMsg loginMsg = new LoginMsg();
 		loginMsg.setUsername(Settings.getUsername());
@@ -345,6 +344,6 @@ public class ClientSolution extends Thread
 		
 		writer.println(logoutMsg.toJsonString());
 		
-		closed = true;
+		connectionClosed = true;
 	}
 }
