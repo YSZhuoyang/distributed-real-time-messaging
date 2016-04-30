@@ -78,7 +78,7 @@ public class ClientSolution extends Thread
 		 */
 		sendLogoutMsg();
 		closeConnection();
-		System.exit(0);
+		mainFrame.close();
 	}
 	
 	public void attachMainFrame(MainFrame mainFrame)
@@ -116,7 +116,7 @@ public class ClientSolution extends Thread
 					String info = receivedJson.get("info").getAsString();
 					mainFrame.showInfoBox(info);
 					closeConnection();
-					System.exit(0);
+					mainFrame.close();
 					
 					return true;
 					
@@ -245,8 +245,9 @@ public class ClientSolution extends Thread
 	{
 		String info = receivedJsonObj.get("info").getAsString();
 		
-		textFrame.showErrorMsg(info);
-		disconnect();
+		mainFrame.showInfoBox(info);
+		closeConnection();
+		mainFrame.close();
 		
 		return true;
 	}

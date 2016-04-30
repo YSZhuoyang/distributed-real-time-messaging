@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -18,13 +20,13 @@ import javax.swing.border.Border;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 
 @SuppressWarnings("serial")
 public class TextFrame extends JFrame implements ActionListener
@@ -35,7 +37,6 @@ public class TextFrame extends JFrame implements ActionListener
 	private JTextArea outputText;
 	private JButton sendButton;
 	private JButton disconnectButton;
-	private JSONParser parser = new JSONParser();
 
 	public TextFrame()
 	{
@@ -77,8 +78,17 @@ public class TextFrame extends JFrame implements ActionListener
 
 		setLocationRelativeTo(null);
 		setSize(1280, 768);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setVisible(true);
+		
+		addWindowListener(new WindowAdapter()
+		{
+			public void windowClosing(WindowEvent e)
+			{
+				ClientSolution.getInstance().disconnect();
+				
+				e.getWindow().dispose();
+		    }
+		});
 	}
 	
 	public void displayActivityMessageText(final JsonObject obj)

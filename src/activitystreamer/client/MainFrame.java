@@ -30,7 +30,7 @@ public class MainFrame implements ActionListener
 	public MainFrame()
 	{
 		frame = new JFrame("User login");
-		frame.setSize(300, 200);
+		frame.setSize(450, 200);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
 		JPanel panel = new JPanel();
@@ -73,18 +73,18 @@ public class MainFrame implements ActionListener
 		passwordText.setBounds(100, 100, 160, 25);
 		panel.add(passwordText);
 
-		loginButton = new JButton("login");
-		loginButton.setBounds(10, 130, 80, 25);
+		loginButton = new JButton("Login");
+		loginButton.setBounds(10, 130, 110, 25);
 		panel.add(loginButton);
 		loginButton.addActionListener(this);
 
-		registerButton = new JButton("register");
-		registerButton.setBounds(110, 130, 80, 25);
+		registerButton = new JButton("Register");
+		registerButton.setBounds(140, 130, 110, 25);
 		panel.add(registerButton);
 		registerButton.addActionListener(this);
 
-		anonymousButton = new JButton("anonymous");
-		anonymousButton.setBounds(210, 130, 80, 25);
+		anonymousButton = new JButton("Anonymous login");
+		anonymousButton.setBounds(270, 130, 160, 25);
 		panel.add(anonymousButton);
 		anonymousButton.addActionListener(this);
 		frame.setVisible(true);
@@ -103,11 +103,16 @@ public class MainFrame implements ActionListener
 		frame.setVisible(false);
 	}
 	
+	public void close()
+	{
+		frame.dispose();
+	}
+	
 	public void actionPerformed(ActionEvent e)
 	{
 		if (e.getSource() == loginButton)
 		{
-			Settings.setSecret(passwordText.getText());
+			Settings.setSecret(new String(passwordText.getPassword()));
 			Settings.setUsername(userText.getText());
 			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
 			Settings.setRemoteHostname(hostnameText.getText());
@@ -118,7 +123,7 @@ public class MainFrame implements ActionListener
 		}
 		else if (e.getSource() == registerButton)
 		{
-			Settings.setSecret(passwordText.getText());
+			Settings.setSecret(new String(passwordText.getPassword()));
 			Settings.setUsername(userText.getText());
 			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
 			Settings.setRemoteHostname(hostnameText.getText());

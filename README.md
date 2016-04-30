@@ -38,10 +38,16 @@ Multi-server broadcast client messages.
 
 ## Client register && login
 
-* Run 'Client.java'
-* Register: enter username， secret, remote host，and remote port number. Click 'register' button.
-* Login with username and secret: enter username， secret, remote host，and remote port number. Click 'login' button.
-* Anonymous login without register: Click 'Anonymous login' button.
+* Start client: user can either start a client with attributes below, or type the same attributes in the window popped up.
+
+        -u <user name>
+        -rp <remote port>
+        -rh <remote host>
+        -s <secret>
+
+* Register: run 'Client.java', enter username， secret, remote host，and remote port number. Click 'register' button. After that the window will close, and then user can start client again and login with the same username and secret.
+* Login with username and secret: run 'Client.java', enter username， secret, remote host，and remote port number. Click 'login' button.
+* Anonymous login without register: run 'Client.java', click 'Anonymous login' button.
 
 ## Broadcast activity message
 

@@ -226,7 +226,20 @@ public class ControlSolution extends Control
 	private boolean processLogoutMsg(Connection con, JsonObject receivedJsonObj)
 	{
 		// Remove client from the client connection list
-		clientConnectionList.remove(con);
+		Connection toBeDeleted = null;
+		
+		for (Connection connection : clientConnectionList)
+		{
+			if (connection.getSocket().getPort() == con.getSocket().getPort())
+			{
+				toBeDeleted = connection;
+			}
+		}
+		
+		if (toBeDeleted != null)
+		{
+			clientConnectionList.remove(toBeDeleted);
+		}
 
 		log.info("user logout");
 
