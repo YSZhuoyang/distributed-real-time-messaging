@@ -406,7 +406,7 @@ public class ControlSolution extends Control
 			return true;
 		}
 		// Only root server, no other server exists
-		else if (serverInfoList.size() == 0)
+		else if (serverConnectionList.size() == 0)
 		{
 			log.info("Register_Success");
 
@@ -437,6 +437,8 @@ public class ControlSolution extends Control
 
 		String lockRequestJsonStr = lockRequestMsg.toJsonString();
 		broadcastToAllOtherServers(lockRequestJsonStr);
+		
+		log.info("Lock request sent");
 
 		return false;
 	}
@@ -573,7 +575,7 @@ public class ControlSolution extends Control
 					lockInfoList.remove(lockInfoToBeDeleted);
 					clientConnection.closeCon();
 					
-					return true;
+					return false;
 				}
 			}
 		}
@@ -586,6 +588,8 @@ public class ControlSolution extends Control
 
 	private boolean processLockDeniedMsg(Connection con, JsonObject receivedJsonObj)
 	{
+		log.info("Lock denied received");
+		
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
 
@@ -616,6 +620,8 @@ public class ControlSolution extends Control
 
 		if (registerDenied)
 		{
+			log.info("Register denied");
+			
 			lockInfoList.remove(lockInfoToBeDeleted);
 		}
 		// The user is trying to register on another server, and this server received 
@@ -632,6 +638,8 @@ public class ControlSolution extends Control
 
 	private boolean processLockRequestMsg(Connection con, JsonObject receivedJsonObj)
 	{
+		log.info("Lock request received");
+		
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String username = receivedJsonObj.get("username").getAsString();
 
@@ -643,6 +651,8 @@ public class ControlSolution extends Control
 		// Only consider user names registered according to the specifications
 		if (clientInfoList.containsKey(username))
 		{
+			log.info("Lock denied sent");
+			
 			LockDeniedMsg lockDeniedMsg = new LockDeniedMsg();
 			lockDeniedMsg.setUsername(username);
 			lockDeniedMsg.setSecret(secret);
