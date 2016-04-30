@@ -520,9 +520,6 @@ public class ControlSolution extends Control
 		String username = receivedJsonObj.get("username").getAsString();
 		String secret = receivedJsonObj.get("secret").getAsString();
 		String id = receivedJsonObj.get("server").getAsString();
-
-		boolean registerSucceed = false;
-		boolean registeringOnThisServer = false;
 		LockInfo lockInfoToBeDeleted = null;
 
 		// Each lockInfo is bound with a user who is trying to register on this server
@@ -534,7 +531,6 @@ public class ControlSolution extends Control
 				log.info("Lock allowed received");
 
 				lockInfo.addAllowedServer(id);
-				registeringOnThisServer = true;
 
 				if (lockInfo.lockAllowedMsgReceivedFromAllServers(serverInfoList))
 				{
@@ -554,46 +550,18 @@ public class ControlSolution extends Control
 					lockInfoList.remove(lockInfo);
 
 					lockInfoToBeDeleted = lockInfo;
-					registerSucceed = true;
-
-					// Find a server with less client connections
-					ServerInfo serverInfo = loadBalance();
-
-					// Connect to this server
-					if (serverInfo == null)
-					{
-						clientConnectionList.add(clientConnection);
-					}
-					// Redirect to another server and close the client
-					// connection
-					else
-					{
-						log.info("Redirected");
-
-						RedirectMsg redirectMsg = new RedirectMsg();
-						redirectMsg.setHost(serverInfo.getRemoteHostname());
-						redirectMsg.setPort(serverInfo.getRemotePort());
-						String redirectMsgJsonStr = redirectMsg.toJsonString();
-
-						clientConnection.writeMsg(redirectMsgJsonStr);
-						clientConnection.closeCon();
-					}
-
-					break;
+					
+					// Delete lock info after user successfully registered
+					lockInfoList.remove(lockInfoToBeDeleted);
+					clientConnection.closeCon();
+					
+					return true;
 				}
 			}
 		}
 
-		if (!registeringOnThisServer)
-		{
-			String lockAllowedJsonStr = new Gson().toJson(receivedJsonObj);
-			forwardToOtherServers(con, lockAllowedJsonStr);
-		}
-		// Delete lock info after user successfully registered
-		else if (registerSucceed)
-		{
-			lockInfoList.remove(lockInfoToBeDeleted);
-		}
+		String lockAllowedJsonStr = new Gson().toJson(receivedJsonObj);
+		forwardToOtherServers(con, lockAllowedJsonStr);
 
 		return false;
 	}
@@ -780,7 +748,7 @@ public class ControlSolution extends Control
 	{
 		String secret = clientInfoList.get(u);
 
-		if (secret.equals(s))
+		if (secret != null && secret.equals(s))
 		{
 			clientInfoList.remove(u);
 		}

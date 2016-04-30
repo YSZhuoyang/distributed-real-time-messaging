@@ -15,7 +15,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import Message.*;
-import activitystreamer.server.Connection;
 import activitystreamer.util.Settings;
 
 
@@ -60,9 +59,9 @@ public class ClientSolution extends Thread
 			establishConnection();
 			
 			// Testing
-			//sendRegisterMsg();
+			sendRegisterMsg();
 			//sendLoginMsg();
-			sendAnonymusLoginMsg();
+			//sendAnonymusLoginMsg();
 			
 			// open the gui
 			log.debug("opening the gui");
@@ -131,7 +130,9 @@ public class ClientSolution extends Thread
 				case JsonMessage.REGISTER_SUCCESS:
 					log.info("Register success received");
 					
-					return false;
+					closeConnection();
+					
+					return true;
 					
 				case JsonMessage.REGISTER_FAILED:
 					log.info("Register failed");
@@ -279,8 +280,7 @@ public class ClientSolution extends Thread
 			out = new DataOutputStream(socket.getOutputStream());
 			writer = new PrintWriter(out, true);
 			
-			closed = false;
-			
+			closed = false;	
 		}
 		catch (IOException e)
 		{
