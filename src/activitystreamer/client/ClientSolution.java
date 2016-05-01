@@ -111,18 +111,9 @@ public class ClientSolution extends Thread
 					return false;
 				
 				case JsonMessage.REGISTER_SUCCESS:
-					log.info("Register success received");
-					
-					String info = receivedJson.get("info").getAsString();
-					mainFrame.showInfoBox(info);
-					closeConnection();
-					mainFrame.close();
-					
-					return true;
+					return processRegisterSuccessMsg(receivedJson);
 					
 				case JsonMessage.REGISTER_FAILED:
-					log.info("Register failed");
-
 					return processRegisterFailedMsg(receivedJson);
 					
 				case JsonMessage.REDIRECT:
@@ -137,19 +128,7 @@ public class ClientSolution extends Thread
 					return true;
 
 				case JsonMessage.LOGIN_SUCCESS:
-					log.info("Login success received");
-
-					// open the gui
-					log.debug("opening the gui");
-					
-					mainFrame.hide();
-					
-					if (textFrame == null)
-					{
-						textFrame = new TextFrame();
-					}
-					
-					return false;
+					return processLoginSuccessMsg();
 					
 				case JsonMessage.LOGIN_FAILED:
 					log.info("Login failed");
@@ -192,13 +171,43 @@ public class ClientSolution extends Thread
 		}
 		catch (IOException e)
 		{
-			System.err.println("Client failed: " + e.getMessage());
+			interrupt();
+			//System.err.println("Client failed: " + e.getMessage());
 		}
 	}
 	
 	/*
 	 * additional methods
 	 */
+	private boolean processLoginSuccessMsg()
+	{
+		log.info("Login success received");
+
+		// open the gui
+		log.debug("opening the gui");
+		
+		mainFrame.hide();
+		
+		if (textFrame == null)
+		{
+			textFrame = new TextFrame();
+		}
+		
+		return false;
+	}
+	
+	private boolean processRegisterSuccessMsg(JsonObject receivedJsonObj)
+	{
+		log.info("Register success received");
+		
+		String info = receivedJsonObj.get("info").getAsString();
+		mainFrame.showInfoBox(info);
+		closeConnection();
+		mainFrame.close();
+		
+		return true;
+	}
+	
 	private boolean processUnknownMsg(JsonObject receivedJsonObj)
 	{
 		log.info("Unknown message received");
@@ -243,6 +252,8 @@ public class ClientSolution extends Thread
 	
 	private boolean processRegisterFailedMsg(JsonObject receivedJsonObj)
 	{
+		log.info("Register failed");
+		
 		String info = receivedJsonObj.get("info").getAsString();
 		
 		mainFrame.showInfoBox(info);

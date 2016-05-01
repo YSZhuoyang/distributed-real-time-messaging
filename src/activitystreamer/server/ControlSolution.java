@@ -83,11 +83,10 @@ public class ControlSolution extends Control
 	public Connection incomingConnection(Socket s) throws IOException
 	{
 		Connection con = super.incomingConnection(s);
-
+		
 		/*
 		 * do additional things here
 		 */
-
 		return con;
 	}
 
@@ -124,9 +123,11 @@ public class ControlSolution extends Control
 	public void connectionClosed(Connection con)
 	{
 		super.connectionClosed(con);
+		
 		/*
 		 * do additional things here
 		 */
+		con.closeCon();
 	}
 
 	/*
@@ -261,7 +262,8 @@ public class ControlSolution extends Control
 
 		log.info(errorInfo);
 		
-		if (errorInfo.equals(JsonMessage.UNAUTHENTICATED_SERVER))
+		if (errorInfo.equals(JsonMessage.UNAUTHENTICATED_SERVER) || 
+			errorInfo.equals(JsonMessage.REPEATED_AUTHENTICATION))
 		{
 			return true;
 		}
@@ -485,6 +487,11 @@ public class ControlSolution extends Control
 
 			return true;
 		}
+		// Server already authenticated
+		else if (isServerAuthenticated(con))
+		{
+			return true;
+		}
 		// Connect with server
 		else
 		{
@@ -538,11 +545,8 @@ public class ControlSolution extends Control
 		serverAnnounceMsg.setLoad(serverInfo.getServerLoad());
 		serverAnnounceMsg.setPort(serverInfo.getRemotePort());
 
-		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
-
-		log.debug("Connection number: " + serverConnectionList.size());
-
 		// Send to adjacent servers
+		String serverAnnounceJsonStr = serverAnnounceMsg.toJsonString();
 		forwardToOtherServers(con, serverAnnounceJsonStr);
 
 		return false;
@@ -707,10 +711,6 @@ public class ControlSolution extends Control
 			{
 				con.writeMsg(jsonStr);
 			}
-			else
-			{
-				log.debug("Same Server!!!!!!!!");
-			}
 		}
 	}
 
@@ -819,6 +819,23 @@ public class ControlSolution extends Control
 		}
 
 		return null;
+	}
+	
+	private boolean isServerAuthenticated(Connection con)
+	{
+		for (Connection connection : serverConnectionList)
+		{
+			if (con.getSocket().getPort() == connection.getSocket().getPort())
+			{
+				InvalidMsg invalidMsg = new InvalidMsg();
+				invalidMsg.setInfo(JsonMessage.REPEATED_AUTHENTICATION);
+				con.writeMsg(invalidMsg.toJsonString());
+				
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	private boolean lockInfoContainsUsername(String username)
