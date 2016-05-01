@@ -487,7 +487,7 @@ public class ControlSolution extends Control
 
 			return true;
 		}
-		// Server already authenticated
+		// Server already authenticated, send invalid message
 		else if (isServerAuthenticated(con))
 		{
 			return true;
@@ -691,6 +691,12 @@ public class ControlSolution extends Control
 
 			clientInfoList.put(username, secret);
 		}
+		
+		LockRequestMsg lockRequestMsg = new LockRequestMsg();
+		lockRequestMsg.setUsername(username);
+		lockRequestMsg.setSecret(secret);
+		
+		forwardToOtherServers(con, lockRequestMsg.toJsonString());
 
 		return false;
 	}
