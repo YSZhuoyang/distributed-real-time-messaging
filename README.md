@@ -1,4 +1,4 @@
-# COMP90015 Distributed Systems Project I #
+﻿# COMP90015 Distributed Systems Project I #
 
 Multi-server broadcast client messages.
 
@@ -27,7 +27,7 @@ Multi-server broadcast client messages.
 
 ## Setup servers
 
-* Run 'Server.java' with an attribute '-lp <local port number>' to start a root server. A secret will be returned can can be found in console. Same secret will be used to start other servers. (Note: host name of root server is '127.0.1.1' by default)
+* Run 'Server.java' with an attribute '-lp <local port number>' to start a root server. A secret will be returned can can be found in console. Same secret will be used to start other servers.
 * Run 'Server.java' with attributes:
 
         -lp <local port>
@@ -60,7 +60,7 @@ Multi-server broadcast client messages.
     ../src/activitystreamer.client   ---Client implementations
     ../src/activitystreamer.server   ---Server implementations
     ../src/activitystreamer.util     ---Helper functions
-    ../src/activitystreamer.message  ---Standardized message implementations
+    ../src/activitystreamer.Message  ---Standardized message implementations
 
 ## Contributors
 
