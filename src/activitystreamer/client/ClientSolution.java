@@ -131,15 +131,9 @@ public class ClientSolution extends Thread
 					return processLoginSuccessMsg();
 					
 				case JsonMessage.LOGIN_FAILED:
-					log.info("Login failed");
-					
-					disconnect();
-					
-					return true;
+					return processLoginFailedMsg(receivedJson);
 					
 				case JsonMessage.INVALID_MESSAGE:
-					log.info("Client failed to send activity message to server.");
-					
 					return processInvalidMsg(receivedJson);
 				
 				default:
@@ -178,6 +172,18 @@ public class ClientSolution extends Thread
 	/*
 	 * additional methods
 	 */
+	private boolean processLoginFailedMsg(JsonObject receivedJson)
+	{
+		log.info("Login failed");
+		
+		String loginFaildInfo = receivedJson.get("info").getAsString();
+		mainFrame.showInfoBox(loginFaildInfo);
+		closeConnection();
+		mainFrame.close();
+		
+		return true;
+	}
+	
 	private boolean processLoginSuccessMsg()
 	{
 		log.info("Login success received");
@@ -241,8 +247,9 @@ public class ClientSolution extends Thread
 	
 	private boolean processInvalidMsg(JsonObject receivedJsonObj)
 	{
-		String info = receivedJsonObj.get("info").getAsString();
+		log.info("Client failed to send activity message to server.");
 		
+		String info = receivedJsonObj.get("info").getAsString();
 		textFrame.showErrorMsg(info);
 		disconnect();
 		
@@ -305,8 +312,6 @@ public class ClientSolution extends Thread
 			
 			out.close();
 			writer.close();
-			
-			//socket.close();
 			
 			connectionClosed = true;
 		}
