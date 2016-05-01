@@ -71,14 +71,13 @@ public class ClientSolution extends Thread
 	// called by the gui when the user clicks disconnect
 	public void disconnect()
 	{
-		textFrame.setVisible(false);
-
 		/*
 		 * other things to do
 		 */
 		sendLogoutMsg();
 		closeConnection();
 		mainFrame.close();
+		textFrame.dispose();
 	}
 	
 	public void attachMainFrame(MainFrame mainFrame)

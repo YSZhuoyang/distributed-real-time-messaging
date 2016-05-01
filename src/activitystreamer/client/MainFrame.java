@@ -112,6 +112,16 @@ public class MainFrame implements ActionListener
 	{
 		if (e.getSource() == loginButton)
 		{
+			if (passwordText.getPassword().length == 0 ||
+				userText.getText().isEmpty() ||
+				hostportText.getText().isEmpty()||
+				hostnameText.getText().isEmpty())
+			{
+				showInfoBox("All fields must not be empty");
+				
+				return;
+			}
+			
 			Settings.setSecret(new String(passwordText.getPassword()));
 			Settings.setUsername(userText.getText());
 			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
@@ -123,6 +133,16 @@ public class MainFrame implements ActionListener
 		}
 		else if (e.getSource() == registerButton)
 		{
+			if (passwordText.getPassword().length == 0 ||
+				userText.getText().isEmpty() ||
+				hostportText.getText().isEmpty()||
+				hostnameText.getText().isEmpty())
+			{
+				showInfoBox("All fields must not be empty");
+				
+				return;
+			}
+			
 			Settings.setSecret(new String(passwordText.getPassword()));
 			Settings.setUsername(userText.getText());
 			Settings.setRemotePort(Integer.parseInt(hostportText.getText()));
