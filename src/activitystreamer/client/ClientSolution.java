@@ -172,7 +172,6 @@ public class ClientSolution extends Thread
 		catch (IOException e)
 		{
 			interrupt();
-			//System.err.println("Client failed: " + e.getMessage());
 		}
 	}
 	

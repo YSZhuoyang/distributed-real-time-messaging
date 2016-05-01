@@ -9,43 +9,55 @@ import org.apache.logging.log4j.Logger;
 
 import activitystreamer.util.Settings;
 
-public class Listener extends Thread{
+public class Listener extends Thread
+{
 	private static final Logger log = LogManager.getLogger();
-	private ServerSocket serverSocket=null;
+	private ServerSocket serverSocket = null;
 	private boolean term = false;
 	private int portnum;
-	
-	public Listener() throws IOException{
-		portnum = Settings.getLocalPort(); // keep our own copy in case it changes later
+
+	public Listener() throws IOException
+	{
+		portnum = Settings.getLocalPort(); // keep our own copy in case it
+											// changes later
 		serverSocket = new ServerSocket(portnum);
 		start();
 	}
-	
+
 	@Override
-	public void run() {
-		log.info("listening for new connections on "+portnum);
-		while(!term){
+	public void run()
+	{
+		log.info("listening for new connections on " + portnum);
+		while (!term)
+		{
 			Socket clientSocket;
-			try {
+			try
+			{
 				clientSocket = serverSocket.accept();
 				ControlSolution.getInstance().incomingConnection(clientSocket);
-			} catch (IOException e) {
+			}
+			catch (IOException e)
+			{
 				log.info("received exception, shutting down");
-				term=true;
+				term = true;
 			}
 		}
 	}
 
-	public void setTerm(boolean term) {
+	public void setTerm(boolean term)
+	{
 		this.term = term;
-		if(term){
-			try{
+		if (term)
+		{
+			try
+			{
 				serverSocket.close();
-			}catch (IOException io){
+			}
+			catch (IOException io)
+			{
 				log.error("Server socket closed error");
 			}
 		}
 	}
-	
-	
+
 }

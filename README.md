@@ -27,7 +27,7 @@ Multi-server broadcast client messages.
 
 ## Setup servers
 
-* Run 'Server.java' with an attribute '-lp <local port number>' to start a root server. A secret will be returned can can be found in console. Same secret will be used to start other servers.
+* Run 'Server.java' with an attribute '-lp <local port number>' to start a root server. A secret will be returned can can be found in console. Same secret will be used to start other servers. (Note: host name of root server is '127.0.1.1' by default)
 * Run 'Server.java' with attributes:
 
         -lp <local port>
@@ -68,3 +68,4 @@ Multi-server broadcast client messages.
 * Kangping Huang
 * Fallie Zhang
 * Boyang Xing
+
