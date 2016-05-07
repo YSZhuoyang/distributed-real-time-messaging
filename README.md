@@ -1,6 +1,8 @@
 ﻿# COMP90015 Distributed Systems Project I #
 
-Multi-server broadcast client messages.
+* Multi-server broadcast client messages.
+* Broadcast server clusters perform server load balancing for client login.
+* Broadcast lock requests when a client is trying to register on one of server nodes.
 
 ## Server architecture
 
