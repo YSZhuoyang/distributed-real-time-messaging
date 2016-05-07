@@ -10,6 +10,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+
 import Message.*;
 import activitystreamer.util.Settings;
 
@@ -141,8 +143,21 @@ public class ControlSolution extends Control
 		 * do additional work here return true/false as appropriate
 		 */
 		log.debug("Server Receieved: " + msg);
-
-		JsonObject receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		
+		JsonObject receivedJsonObj;
+		
+		try
+		{
+			receivedJsonObj = new Gson().fromJson(msg, JsonObject.class);
+		}
+		catch (JsonSyntaxException e)
+		{
+			log.debug("Server receiving msg failed. Not json format: " + e.getMessage());
+			
+			con.closeCon();
+			
+			return true;
+		}
 		
 		if (!containCommandField(con, receivedJsonObj))
 		{
