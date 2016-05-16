@@ -300,8 +300,6 @@ public class LoadBalancerSolution extends Control
 			serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
 			serverInfo.setRemoteHostname(receivedJsonObj.get("hostname").getAsString());
 			serverInfo.setRemotePort(receivedJsonObj.get("port").getAsInt());
-			serverInfo.setConnected(true);
-			serverInfo.setConnection(con);
 			serverInfoList.add(serverInfo);
 		}
 		// This is a known server, update server load info

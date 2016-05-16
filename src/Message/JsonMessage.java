@@ -28,10 +28,6 @@ public class JsonMessage
 	public final static String AUTHENTICATION_FAIL = "AUTHTENTICATION_FAIL";
 	public final static String AUTHENTICATE = "AUTHENTICATE";
 	
-	public final static String LOCK_ALLOWED = "LOCK_ALLOWED";
-	public final static String LOCK_DENIED = "LOCK_DENIED";
-	public final static String LOCK_REQUEST = "LOCK_REQUEST";
-
 	public final static String REDIRECT = "REDIRECT";
 	public final static String INVALID_MESSAGE = "INVALID_MESSAGE";
 	public final static String SERVER_ANNOUNCE = "SERVER_ANNOUNCE";
