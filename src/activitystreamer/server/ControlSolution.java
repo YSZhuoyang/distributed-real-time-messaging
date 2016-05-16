@@ -543,8 +543,6 @@ public class ControlSolution extends Control
 			serverInfo.setServerLoad(receivedJsonObj.get("load").getAsInt());
 			serverInfo.setRemoteHostname(receivedJsonObj.get("hostname").getAsString());
 			serverInfo.setRemotePort(receivedJsonObj.get("port").getAsInt());
-			serverInfo.setConnected(true);
-			serverInfo.setConnection(con);
 			serverInfoList.add(serverInfo);
 		}
 		// This is a known server, update server load info
@@ -678,10 +676,10 @@ public class ControlSolution extends Control
 		// Consider both user names registered and waiting to be registered (which are
 		// people who is trying to register). This prevents more than one users register
 		// on different servers with the same user name at the same time.
-		//if (clientInfoList.containsKey(username) || lockInfoContainsUsername(username))
+		if (clientInfoList.containsKey(username) || lockInfoContainsUsername(username))
 		/*-----------------------------------------------------------------------------*/
 		// Only consider user names registered according to the specifications
-		if (clientInfoList.containsKey(username))
+		//if (clientInfoList.containsKey(username))
 		{
 			log.info("Lock denied sent");
 			

@@ -5,10 +5,8 @@ public class ServerInfo
 {
 	private String id = null;
 	private String remoteHostname = null;
-	private Connection connection = null;
 	private int remotePort = 3780;
 	private int serverLoad = 0;
-	private boolean connected;
 
 	public String getId()
 	{
@@ -20,16 +18,6 @@ public class ServerInfo
 		this.id = id;
 	}
 	
-	public void setConnected(boolean connected)
-	{
-		this.connected = connected;
-	}
-	
-	public boolean connected()
-	{
-		return connected;
-	}
-	
 	public String getRemoteHostname()
 	{
 		return remoteHostname;
@@ -38,16 +26,6 @@ public class ServerInfo
 	public void setRemoteHostname(String remoteHostname)
 	{
 		this.remoteHostname = remoteHostname;
-	}
-	
-	public Connection getConnection()
-	{
-		return connection;
-	}
-	
-	public void setConnection(Connection con)
-	{
-		connection = con;
 	}
 	
 	public int getRemotePort()
