@@ -17,7 +17,7 @@
                     |        |      |   ...   ...                      |
                     |--------|      |----------------------------------|
 
-## Prerequisites of running the project
+## Prerequisites
 
 * Eclipse
 * JavaSE 8+
@@ -49,7 +49,7 @@
         -lbh <load balancer host name>
         -s <secret>
 
-## Client register && login
+## Client register & login
 
 * Start client: user can either start a client with attributes below, or type the same attributes in the window popped up.
 
@@ -83,4 +83,3 @@
 * Kangping Huang
 * Fallie Zhang
 * Boyang Xing
-
