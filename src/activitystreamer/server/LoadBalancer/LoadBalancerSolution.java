@@ -31,8 +31,6 @@ public class LoadBalancerSolution extends Control
 	protected static final Logger log = LogManager.getLogger();
 	
 	private ArrayList<Connection> serverConnectionList = new ArrayList<>();
-
-	// All servers except itself
 	private ArrayList<BroadcasterInfo> serverInfoList = new ArrayList<>();
 	private HashMap<String, String> clientInfoList = new HashMap<>();
 	private LoadBalancerListener listener;
