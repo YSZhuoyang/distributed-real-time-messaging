@@ -29,9 +29,6 @@ public class BroadcasterSolution extends Control
 	private static final Logger log = LogManager.getLogger();
 	private static final int SERVER_CONNECTION_UPPER_LIMIT = 5;
 	
-	/*
-	 * additional variables as needed
-	 */
 	private ArrayList<Connection> serverConnectionList = new ArrayList<>();
 	private ArrayList<Connection> clientConnectionList = new ArrayList<>();
 	private ClusterConnection cluster_LoadBalancer;
@@ -96,9 +93,6 @@ public class BroadcasterSolution extends Control
 	 */
 	public void outgoingConnection(Socket s, boolean toLoadBalancer) throws IOException
 	{
-		/*
-		 * do additional things here
-		 */
 		ClusterConnection con = new ClusterConnection(s);
 
 		// Send authentication message
@@ -129,9 +123,6 @@ public class BroadcasterSolution extends Control
 	{
 		super.connectionClosed(con);
 		
-		/*
-		 * do additional things here
-		 */
 		if (!term && !serverConnectionList.remove(con))
 		{
 			clientConnectionList.remove(con);
@@ -265,9 +256,6 @@ public class BroadcasterSolution extends Control
 	@Override
 	public synchronized boolean process(Connection con, String msg)
 	{
-		/*
-		 * do additional work here return true/false as appropriate
-		 */
 		log.debug("Server Receieved: " + msg);
 		
 		JsonObject receivedJsonObj;
@@ -325,9 +313,6 @@ public class BroadcasterSolution extends Control
 	@Override
 	public boolean doActivity()
 	{
-		/*
-		 * do additional work here return true/false as appropriate
-		 */
 		// Broadcast server announce
 		ServerAnnounceMsg serverAnnounceMsg = new ServerAnnounceMsg();
 		serverAnnounceMsg.setHostname(Settings.getLocalHostname());
@@ -350,22 +335,6 @@ public class BroadcasterSolution extends Control
 	 */
 	private boolean processLogoutMsg(Connection con, JsonObject receivedJsonObj)
 	{
-		// Remove client from the client connection list
-		/*Connection toBeDeleted = null;
-		
-		for (Connection connection : clientConnectionList)
-		{
-			if (connection.getSocket().getPort() == con.getSocket().getPort())
-			{
-				toBeDeleted = connection;
-			}
-		}
-		
-		if (toBeDeleted != null)
-		{
-			clientConnectionList.remove(toBeDeleted);
-		}*/
-		
 		log.info("user logout");
 
 		clientConnectionList.remove(con);
