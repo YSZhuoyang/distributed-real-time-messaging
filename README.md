@@ -3,18 +3,18 @@
 * Multi-server broadcaster with an improved architecture and security protocals.
 * Load balancer managing the server load balancing, client register, login and redirection.
 * Load balancer can optionally have mirrored backups for better stability.
-* SSL protocal support (compatible with plain connections for outgoing connection, but not incomming connection).
+* Support SSL protocal (compatible with plain connections for outgoing connection, but not incomming connection).
 
 ## Server architecture
 
     (registering    |--------|      |----------------------------------|
-     / logging in)  |        |      |                 root             |    (logged in)
-       client1------|        |      |                /    \            |------client4
-                    |  load  |      |          server1    server2      |
-       client2------|balancer|------|           / \          / \       |------client5
-                    |        |      |    server3   ...    ...   ...    |
-       client3------|        |      |      / \                         |
-                    |        |      |   ...   ...                      |
+     / logging in)  |        |      |                  root            |    (logged in)
+       client1------|        |      |                  /  \            |------client4
+                    |  load  |      |       broadcaster1  broadcaster2 |
+       client2------|balancer|------|           /  \          /  \     |------client5
+                    |        |      | broadcaster3  ...    ...    ...  |
+       client3------|        |      |     /  \                         |
+                    |        |      |  ...    ...                      |
                     |--------|      |----------------------------------|
 
 ## Prerequisites
@@ -25,7 +25,6 @@
 
         commons-cli-1.3.1	Apache License Version 2.0
         apache-log4j-2.5	Apache License Version 2.0
-        json_simple-1.1         The JSON License
         gson-2.6.2	        Apache License Version 2.0
 
 ## Setup servers
@@ -58,8 +57,8 @@
         -rh <load balancer host name>
         -s <client secret>
 
-* Register: run 'Client.java', enter username， secret, remote host，and remote port number. Click 'register' button.
-* Login with username and secret: enter username， secret, remote host，and remote port number. Click 'login' button.
+* Register: run 'Client.java', enter username, secret, remote host, and remote port number. Click 'register' button.
+* Login with username and secret: enter username, secret, remote host, and remote port number. Click 'login' button.
 * Anonymous login without register: run 'Client.java', click 'Anonymous login' button.
 
 ## Broadcast activity message

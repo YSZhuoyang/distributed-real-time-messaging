@@ -18,14 +18,9 @@ import javax.swing.JTextArea;
 import javax.swing.border.Border;
 
 //import org.apache.logging.log4j.LogManager;
-//import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 
 @SuppressWarnings("serial")
@@ -106,18 +101,6 @@ public class TextFrame extends JFrame implements ActionListener
         JOptionPane.showMessageDialog(null, error, "Error", JOptionPane.INFORMATION_MESSAGE);
 	}
 	
-	public void setOutputText(final JSONObject obj)
-	{
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		JsonParser jp = new JsonParser();
-		JsonElement je = jp.parse(obj.toJSONString());
-		String prettyJsonString = gson.toJson(je);
-		
-		outputText.setText(prettyJsonString);
-		outputText.revalidate();
-		outputText.repaint();
-	}
-
 	@Override
 	public void actionPerformed(ActionEvent e)
 	{
