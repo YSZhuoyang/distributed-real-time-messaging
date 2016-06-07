@@ -21,11 +21,11 @@
 
 * Eclipse
 * JavaSE 8+
-* Licenses of dependencies:
+* Dependencies:
 
-        commons-cli-1.3.1	Apache License Version 2.0
-        apache-log4j-2.5	Apache License Version 2.0
-        gson-2.6.2	        Apache License Version 2.0
+        commons-cli-1.3.1
+        apache-log4j-2.6
+        gson-2.6.2
 
 ## Setup servers
 
