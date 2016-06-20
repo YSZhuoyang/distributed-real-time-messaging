@@ -3,7 +3,7 @@
 * Multi-server broadcast client messages.
 * Broadcast server clusters manage client register & login.
 * Decentralized load balancer managing the server load balancing.
-* Concurrency achieved by broadcasting lock requests when a client is trying to register on one of server nodes.
+* Concurrency is achieved by broadcasting lock requests when a client is trying to register on one of server nodes.
 
 ## Server architecture
 
