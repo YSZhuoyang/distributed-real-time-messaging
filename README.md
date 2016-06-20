@@ -1,7 +1,7 @@
 # COMP90015 Distributed Systems Project II #
 
 * Multi-server broadcaster with an improved architecture and security protocals.
-* Load balancer managing the server load balancing, client register, login and redirection.
+* Centralized load balancer managing the server load balancing, client register, login and redirection.
 * Load balancer can optionally have mirrored backups for better stability.
 * Support SSL protocal (compatible with plain connections for outgoing connection, but not incomming connection).
 
