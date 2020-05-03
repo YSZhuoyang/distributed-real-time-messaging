@@ -75,10 +75,3 @@
     ../src/activitystreamer.util                      ---Helper functions and util classes
     ../src/activitystreamer.message                   ---Standardized message implementations
     ../Certificate                                    ---Certificate file for authentication
-
-## Contributors
-
-* Sangzhuoyang Yu
-* Kangping Huang
-* Fallie Zhang
-* Boyang Xing
